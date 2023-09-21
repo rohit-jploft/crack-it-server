@@ -10,6 +10,9 @@ import router from "./routes/index";
 import path from "path";
 import { Server } from "socket.io";
 import http from "http";
+import https from "https";
+import fs from "fs";
+import os from "os";
 //dot env
 dotenv.config();
 
@@ -23,9 +26,10 @@ const onlineUsers = new Map();
 
 app.use(
   cors({
-    credentials: true,
-    origin: `http://localhost:${PORT}`,
-    optionsSuccessStatus: 200,
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 
@@ -91,40 +95,83 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // socket io
 //chat
 // const server = http.createServer(app);
-var httpServer = app.listen(PORT || 4000, () =>
-  console.log(`Server listening on port ${PORT}`)
-);
-const io = new Server(httpServer, {
+
+const networkInterfaces = os.networkInterfaces();
+// console.log("networkInterfaces", networkInterfaces);
+const ipAddress = networkInterfaces["eth0"]
+  ? networkInterfaces["eth0"][0].address
+  : networkInterfaces["ens5"]
+  ? networkInterfaces["ens5"][0].address
+  : "local"; // Replace 'eth0' with your network interface name
+let socketServer;
+if (ipAddress == "local") {
+  socketServer = http.createServer(app);
+} else {
+  let privateKey, certificate;
+  privateKey = fs.readFileSync("/home/ssl/ssl.key", "utf8");
+  certificate = fs.readFileSync("/home/ssl/ssl.pem", "utf8");
+  const credentials = { key: privateKey, cert: certificate };
+  socketServer = https.createServer(credentials, app);
+}
+
+const io = new Server(socketServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
 });
 
-io.on("connection", (socket) => {
-  console.log(`socket connection with socketId:${socket.id}`);
+let users:any = [];
 
-  socket.on('join', (username) => {
-    // Add the user to the onlineUsers Map with their socket ID
-    onlineUsers.set(socket.id, { username });
-    // Notify all clients that a user has joined
-    io.emit('user joined', username);
+  //add user to connected user
+  const addUser = (userId:string, socketId:string) => {
+    !users.some((user:any) => user.userId === userId) &&
+      users.push({ userId, socketId});
+  };
+
+  //remove user from connected userList
+  const removeUser = (socketId:string) => {
+    users = users.filter((user:any) => user.socketId !== socketId);
+  };
+
+  //get user
+  const getUser = (userId:string) => {
+    const user = users.find((user:any) => user.userId === userId);
+    return user;
+  };
+
+  //initialising connection
+  io.on('connection', (socket) => {
+    //when ceonnect
+    console.log('a user connected.');
+    console.log(users);
+    //take userId and socketId from user
+    socket.on('addUser', (userId) => {
+      addUser(userId, socket.id);
+      io.emit('getUsers', users);
+    });
+
+    //send and get message
+    socket.on('sendMessage', ({ senderId, receiverId, text }) => {
+      const user = getUser(receiverId);
+      console.log({ senderId, receiverId, text });
+      console.log(user)
+      io.to(user.socketId).emit('getMessage', {
+        senderId,
+        text,
+      });
+    });
+
+    //when disconnect
+    socket.on('disconnect', () => {
+      console.log('a user disconnected!');
+      removeUser(socket.id);
+      io.emit('getUsers', users);
+    });
   });
 
-  socket.on('chat message', (msg) => {
-    // Handle chat messages here
-    io.emit('chat message', { username: onlineUsers.get(socket.id).username, message: msg });
-  });
-
-  socket.on('disconnect', () => {
-    const username = onlineUsers.get(socket.id)?.username;
-    onlineUsers.delete(socket.id); // Remove the user when they disconnect
-    if (username) {
-      // Notify all clients that a user has left
-      io.emit('user left', username);
-    }
-    console.log('A user disconnected');
-  });
+socketServer.listen(PORT || 4000, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
 
 // server.listen(5000);
@@ -138,7 +185,9 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
-
+    // app.listen(PORT || 4000, () => {
+    //   console.log(`Server listening on port ${PORT}`);
+    // });
     console.log("database connected");
   } catch (error) {
     console.log(error);

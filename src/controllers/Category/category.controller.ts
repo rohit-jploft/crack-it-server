@@ -6,11 +6,13 @@ import Category, {
 import { CategorySchema } from "../../schemas/category.schema";
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import { Types } from "mongoose";
+import { pagination } from "../../helper/pagination";
 
 // create category api
 export const createCategory = async (req: Request, res: Response) => {
   try {
     const data: CategoryDocument = req.body;
+    console.log(data);
 
     // Check validation error using JOI
     const { value, error } = CategorySchema.validate(data);
@@ -30,6 +32,7 @@ export const createCategory = async (req: Request, res: Response) => {
       status: 200,
       success: true,
       data: category,
+      message: "Category created Successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong
@@ -58,16 +61,32 @@ export const getAllcategory = async (
   res: Response
 ): Promise<Response> => {
   let { parent, search } = req.query;
+  // pagination query data
+  const currentPage = Number(req?.query?.page) + 1 || 1;
+
+  let limit = Number(req?.query?.limit) || 10;
+
+  const skip = limit * (currentPage - 1);
+
+  // filter query data
   var query = <queryData>{ isDeleted: false };
   if (parent) query.parent = ObjectId(parent.toString());
   if (!parent) query.parent = { $exists: false };
   if (search) query.title = { $regex: search.toString(), $options: "i" };
+
   try {
-    const catorgies = await Category.find(query);
+    const catorgies = await Category.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // TOTAL COUNT
+    const totalCount = await Category.countDocuments(query);
 
     return res.status(200).json({
       status: 200,
       success: true,
+      pagination: pagination(totalCount, currentPage, limit),
       data: catorgies,
     });
   } catch (error: any) {

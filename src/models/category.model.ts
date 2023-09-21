@@ -15,6 +15,7 @@ const categorySchema: Schema<CategoryData> = new Schema<CategoryData>(
     title: {
       type: String,
       require: true,
+      index:true
     },
     parent: {
       type: Schema.Types.ObjectId,

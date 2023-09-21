@@ -1,27 +1,40 @@
-// import twilio from 'twilio';
+import twilio from "twilio";
 // import { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFICATION_SERVICE_SID } from './constant';
 
-// const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+const {
+  TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN,
+  TWILIO_VERIFICATION_SERVICE_SID,
+}: any = process.env;
 
-// // Send verification
-// const sendVerification = async ( number: string): Promise<string> => {
-//   const verification = await client.verify.v2
-//     .services(TWILIO_VERIFICATION_SERVICE_SID)
-//     .verifications.create({ to: `+91${number}`, channel: 'sms'});
-  
-//   return verification.status;
-// };
+const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
-// // Check verification token
-// const checkVerification = async ( number: string, Otpcode: string): Promise<any> => {
-//   const verify = await client.verify.v2
-//     .services(TWILIO_VERIFICATION_SERVICE_SID)
-//     .verificationChecks.create({ to: `+91${number}`, code: Otpcode });
-  
-//   return JSON.parse(JSON.stringify(verify));
-// };
+// Send verification
+const sendVerification = async (
+  number: string,
+  countryCode: string
+): Promise<string> => {
+  const verification = await client.verify.v2
+    .services(TWILIO_VERIFICATION_SERVICE_SID)
+    .verifications.create({ to: `${countryCode}${number}`, channel: "sms" });
+  console.log(verification);
+  return verification.status;
+};
 
-// export {
-//   sendVerification,
-//   checkVerification
-// };
+// Check verification token
+const checkVerification = async (
+  countryCode: string,
+  number: string,
+  Otpcode: string
+): Promise<any> => {
+  const verify = await client.verify.v2
+    .services(TWILIO_VERIFICATION_SERVICE_SID)
+    .verificationChecks.create({
+      to: `${countryCode}${number}`,
+      code: Otpcode,
+    });
+
+  return JSON.parse(JSON.stringify(verify));
+};
+
+export { sendVerification, checkVerification };

@@ -23,10 +23,21 @@ const signupSchema: Joi.ObjectSchema<signUpDto> = Joi.object<signUpDto>().keys({
 interface loginDto {
   email: string;
   password: string;
+  role: string;
 }
 const loginSchema: Joi.ObjectSchema<loginDto> = Joi.object<loginDto>().keys({
   password: Joi.string().required(),
   email: Joi.string().email().required(),
+  role: Joi.string(),
 });
+interface changePasswordDto {
+  oldPassword: string;
+  password: string;
+}
+const changePasswordSchema: Joi.ObjectSchema<changePasswordDto> =
+  Joi.object<changePasswordDto>().keys({
+    oldPassword: Joi.string().required(),
+    password: Joi.string().required(),
+  });
 
-export { signupSchema, loginSchema };
+export { signupSchema, loginSchema ,changePasswordSchema};

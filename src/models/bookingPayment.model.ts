@@ -10,8 +10,7 @@ import mongoose, {
 export interface BookingPaymentData {
   booking: Types.ObjectId;
   totalAmount: number;
-  tax: number;
-  taxAmount: number;
+  CommissionAmount: number;
   grandTotal: Number;
   status: "PAID" | "UNPAID";
 }
@@ -30,11 +29,8 @@ const bookingPaymentSchema: Schema<BookingPaymentData> =
       totalAmount: {
         type: Number,
       },
-      tax: {
-        type: Number,
-        default: 5,
-      },
-      taxAmount: {
+      
+      CommissionAmount: {
         type: Number,
       },
       grandTotal: {
@@ -48,13 +44,7 @@ const bookingPaymentSchema: Schema<BookingPaymentData> =
     },
     { timestamps: true }
   );
-bookingPaymentSchema.pre("save", function (next) {
-  let taxAmount = (this.tax * this.totalAmount) / 100;
-  this.taxAmount = taxAmount;
-  this.grandTotal = taxAmount + this.totalAmount;
 
-  next();
-});
 const BookingPayment: Model<BookingPaymentDocument> =
   model<BookingPaymentDocument>("BookingPayment", bookingPaymentSchema);
 
