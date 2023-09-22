@@ -12,6 +12,7 @@ import BookingPayment from "../../models/bookingPayment.model";
 import Expert, { ExpertsDocument } from "../../models/experts.model";
 import Commission, { CommissionDocument } from "../../models/commission.model";
 import { pagination } from "../../helper/pagination";
+import { createConversation } from "../Chat/chat.controller";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -117,8 +118,8 @@ export const getAllBooking = async (req: Request, res: Response) => {
   try {
     const bookings = await Booking.find(query)
       .populate("jobCategory", "title")
-      .populate("expert")
-      .populate("user")
+      .populate("expert", "-password")
+      .populate("user","-password")
       .populate({
         path: "skills",
         select: "title",
@@ -187,6 +188,7 @@ export const acceptBooking = async (req: Request, res: Response) => {
       { new: true }
     );
     if (booking && bookingpayment) {
+      await createConversation([booking.expert, booking.user], booking._id);
       return res.status(200).json({
         status: 200,
         success: true,

@@ -152,11 +152,18 @@ let users:any = [];
     });
 
     //send and get message
-    socket.on('sendMessage', ({ senderId, receiverId, text }) => {
+    socket.on('sendMessage', ({ senderId, receiverId, admin, text }) => {
       const user = getUser(receiverId);
+      console.log(receiverId)
+      console.log(user)
+      const adminUser = getUser(admin);
       console.log({ senderId, receiverId, text });
       console.log(user)
       io.to(user.socketId).emit('getMessage', {
+        senderId,
+        text,
+      });
+      io.to(adminUser.socketId).emit('getMessage', {
         senderId,
         text,
       });

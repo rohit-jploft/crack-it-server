@@ -7,6 +7,7 @@ import RatingRoutes from "./rating.route";
 import WalletRoute from "./wallet.route";
 import AdminRoute from "./admin.route";
 import CommissionRoute from "./commission.route";
+import ChatRoute from "./chat.route";
 
 const router: Router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/rating", RatingRoutes);
 router.use("/wallet", WalletRoute);
 router.use("/admin", AdminRoute); 
 router.use("/commission", CommissionRoute);
+router.use("/chat", ChatRoute);
 
 export default router;

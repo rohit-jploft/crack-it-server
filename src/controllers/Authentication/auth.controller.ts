@@ -103,7 +103,7 @@ export const loginUser = async (req: Request, res: Response) => {
         success: true,
         type: "error",
         status: 306,
-        message: "You need to be an Admin",
+        message: "You need to be an Admin / Super Admin",
       });
     }
     if (IsUserExist?.isDeleted) {

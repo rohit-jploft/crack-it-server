@@ -29,7 +29,8 @@ const messageSchema = new Schema<IMessage>({
     default: false,
   },
   // Define other fields here
-});
+  
+},{ timestamps: true });
 
 const Message = model<IMessage>('Message', messageSchema);
 
