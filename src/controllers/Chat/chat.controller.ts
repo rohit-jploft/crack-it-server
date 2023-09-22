@@ -25,19 +25,29 @@ export const createConversation = async (
 export const createConvoApi = async (req: Request, res: Response) => {
   const { meetingId } = req.params;
   try {
-    const meeting = await Booking.findById(meetingId);
-    if (meeting) {
-      let users = [];
-      users.push(meeting.user);
-      users.push(meeting.expert);
-      const convo = await createConversation(users, meeting._id);
-      if (convo) {
-        return res.status(200).json({
-          success: true,
-          status: 200,
-          data: convo,
-          message: "Conversation Created successfully",
-        });
+    const chat = await Chat.findOne({ booking: meetingId });
+    if (chat) {
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: chat,
+        message: "chat with this meetingId is already created",
+      });
+    } else {
+      const meeting = await Booking.findById(meetingId);
+      if (meeting) {
+        let users = [];
+        users.push(meeting.user);
+        users.push(meeting.expert);
+        const convo = await createConversation(users, meeting._id);
+        if (convo) {
+          return res.status(200).json({
+            success: true,
+            status: 200,
+            data: convo,
+            message: "Conversation Created successfully",
+          });
+        }
       }
     }
   } catch (error: any) {
