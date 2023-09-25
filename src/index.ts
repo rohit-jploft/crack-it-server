@@ -4,6 +4,12 @@ import cors from "cors";
 import * as dotenv from "dotenv";
 import { PORT, MONGO_URI, NODE_ENV } from "./utils/constant";
 import { API_ENDPOINT_NOT_FOUND_ERR, SERVER_ERR } from "./utils/error";
+import {
+  addUser,
+  removeUser,
+  getUser,
+  getAllUsers,
+} from "./helper/socketUsers";
 import { ConnectionOptions } from "tls";
 import bodyParser from "body-parser";
 import router from "./routes/index";
@@ -13,6 +19,8 @@ import http from "http";
 import https from "https";
 import fs from "fs";
 import os from "os";
+import Chat from "./models/chat.model";
+import { ObjectId } from "./helper/RequestHelper";
 //dot env
 dotenv.config();
 
@@ -26,8 +34,8 @@ const onlineUsers = new Map();
 
 app.use(
   cors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204,
   })
@@ -121,61 +129,44 @@ const io = new Server(socketServer, {
   },
 });
 
-let users:any = [];
+//initialising connection
+io.on("connection", (socket) => {
+  //when ceonnect
+  console.log("a user connected.");
+  console.log(getAllUsers());
+  //take userId and socketId from user
+  socket.on("addUser", (userId) => {
+    addUser(userId, socket.id);
 
-  //add user to connected user
-  const addUser = (userId:string, socketId:string) => {
-    !users.some((user:any) => user.userId === userId) &&
-      users.push({ userId, socketId});
-  };
+    io.emit("getUsers", getAllUsers);
+  });
+  socket.on("join_room", (chatId) => {
+    socket.join(chatId);
+    console.log("room joined on" , chatId);
+  });
 
-  //remove user from connected userList
-  const removeUser = (socketId:string) => {
-    users = users.filter((user:any) => user.socketId !== socketId);
-  };
-
-  //get user
-  const getUser = (userId:string) => {
-    const user = users.find((user:any) => user.userId === userId);
-    return user;
-  };
-
-  //initialising connection
-  io.on('connection', (socket) => {
-    //when ceonnect
-    console.log('a user connected.');
-    console.log(users);
-    //take userId and socketId from user
-    socket.on('addUser', (userId) => {
-      addUser(userId, socket.id);
-      io.emit('getUsers', users);
-    });
-
-    //send and get message
-    socket.on('sendMessage', ({ senderId, receiverId, admin, text }) => {
-      const user = getUser(receiverId);
-      console.log(receiverId)
-      console.log(user)
-      const adminUser = getUser(admin);
-      console.log({ senderId, receiverId, text });
-      console.log(user)
-      io.to(user.socketId).emit('getMessage', {
-        senderId,
-        text,
-      });
-      io.to(adminUser.socketId).emit('getMessage', {
-        senderId,
-        text,
-      });
-    });
-
-    //when disconnect
-    socket.on('disconnect', () => {
-      console.log('a user disconnected!');
-      removeUser(socket.id);
-      io.emit('getUsers', users);
+  //send and get message
+  socket.on("sendMessage", async ({ chat, content, sender, _id }) => {
+    // const user = getUser(receiverId);
+    const chatData: any = await Chat.findById(ObjectId(chat));
+    if (chatData && chatData?.admin) {
+      const adminUser = getUser(chatData?.admin);
+    }
+    console.log(chat, "chatId")
+    socket.to(chat).emit("getMessage", {
+      sender: sender,
+      message: content,
+      _id:_id
     });
   });
+
+  //when disconnect
+  socket.on("disconnect", () => {
+    console.log("a user disconnected!");
+    removeUser(socket.id);
+    io.emit("getUsers", getAllUsers);
+  });
+});
 
 socketServer.listen(PORT || 4000, () => {
   console.log(`Server listening on port ${PORT}`);

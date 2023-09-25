@@ -3,6 +3,8 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface IMessage extends Document {
   chat: Types.ObjectId;
   sender: Types.ObjectId;
+  type:'text' | 'file';
+  media:string,
   content: string;
   isDeleted?: boolean;
   // Add other message-specific fields as needed
@@ -19,9 +21,16 @@ const messageSchema = new Schema<IMessage>({
     ref: 'User',
     required: true,
   },
+  type:{
+     type:String,
+     default:'text'
+  },
   content: {
     type: String,
     required: true,
+  },
+  media:{
+    type:String
   },
   
   isDeleted: {

@@ -84,7 +84,15 @@ export const getUsersConversation = async (req: Request, res: Response) => {
 };
 export const sendMessage = async (req: Request, res: Response) => {
   const data = req.body;
+  console.log(data);
+
   const { error, value } = messageJoiSchema.validate(data);
+  console.log(req.body);
+
+  if (req?.files) {
+    var { audio }: any = req?.files;
+    var media = audio[0]?.path?.replaceAll("\\", "/") || "";
+  }
 
   if (error) {
     return res.status(403).json({
@@ -97,7 +105,9 @@ export const sendMessage = async (req: Request, res: Response) => {
     const message = await Message.create({
       chat: ObjectId(value.chat),
       sender: ObjectId(value.sender),
+      type: audio ? "file" : "text",
       content: value.content,
+      media: audio ? media : "",
     });
     return res.status(200).json({
       success: true,
@@ -142,30 +152,30 @@ export const searchConversations = async (req: Request, res: Response) => {
   try {
     // Use aggregation to search for chats with matching participants or admin/superAdmin
     const chats = await Chat.aggregate([
-      // {
-      //   $match: {
-      //     $or: [
-      //       { participants: userId },
-      //       { admin: userId },
-      //       { superAdmin: userId },
-      //     ],
-      //   },
-      // },
+      {
+        $match: {
+          $or: [
+            { participants: userId },
+            { admin: userId },
+            { superAdmin: userId },
+          ],
+        },
+      },
       {
         $lookup: {
           from: "users", // The name of the User collection
           localField: "participants",
           foreignField: "_id",
-          as: "participantsDetails",
+          as: "participants",
           pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
         },
       },
-      {
-        $unwind: {
-          path: "$participantsDetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      // {
+      //   $unwind: {
+      //     path: "$participantsDetails",
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
       {
         $lookup: {
           from: "users", // The name of the User collection
@@ -196,33 +206,33 @@ export const searchConversations = async (req: Request, res: Response) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $match: {
-          $or: [
-            {
-              "participantsDetails.firstName": {
-                $regex: search,
-                $options: "i",
-              },
-            },
-            {
-              "participantsDetails.lastName": { $regex: search, $options: "i" },
-            },
-            {
-              "adminDetails.firstName": { $regex: search, $options: "i" },
-            },
-            {
-              "adminDetails.lastName": { $regex: search, $options: "i" },
-            },
-            {
-              "superAdminDetails.firstName": { $regex: search, $options: "i" },
-            },
-            {
-              "superAdminDetails.lastName": { $regex: search, $options: "i" },
-            },
-          ],
-        },
-      },
+      // {
+      //   $match: {
+      //     $or: [
+      //       {
+      //         "participantsDetails.firstName": {
+      //           $regex: search,
+      //           $options: "i",
+      //         },
+      //       },
+      //       {
+      //         "participantsDetails.lastName": { $regex: search, $options: "i" },
+      //       },
+      //       {
+      //         "adminDetails.firstName": { $regex: search, $options: "i" },
+      //       },
+      //       {
+      //         "adminDetails.lastName": { $regex: search, $options: "i" },
+      //       },
+      //       {
+      //         "superAdminDetails.firstName": { $regex: search, $options: "i" },
+      //       },
+      //       {
+      //         "superAdminDetails.lastName": { $regex: search, $options: "i" },
+      //       },
+      //     ],
+      //   },
+      // },
     ]);
 
     return res.status(200).json({
