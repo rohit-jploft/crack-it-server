@@ -14,7 +14,7 @@ import {
 import { createJwtToken } from "../../utils/token.util";
 import { ObjectId } from "../../helper/RequestHelper";
 import { createWallet } from "../Wallet/wallet.controller";
-import { checkVerification, sendVerification } from "../../helper/smsService";
+// import { checkVerification, sendVerification } from "../../helper/smsService";
 
 export const createNewUser = async (req: Request, res: Response) => {
   let data = req.body;
@@ -103,7 +103,7 @@ export const loginUser = async (req: Request, res: Response) => {
         success: true,
         type: "error",
         status: 306,
-        message: "You need to be an Admin / Super Admin",
+        message: `You need to be an ${role}`,
       });
     }
     if (IsUserExist?.isDeleted) {
@@ -261,97 +261,97 @@ export const changePassword = async (req: Request, res: Response) => {
     });
   }
 };
-export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
-  const { mobile, countryCode } = req.body;
-  try {
-    const checkUser = await User.findOne({
-      phone: mobile,
-      countryCode: countryCode,
-    });
-    if (!checkUser) {
-      return res.status(200).json({
-        success: false,
-        status: 200,
-        message: "User not found",
-      });
-    }
-    if (mobile && countryCode) {
-      const sendSms = await sendVerification(mobile, countryCode);
-      if (sendSms) console.log(sendSms);
-      return res.status(200).json({
-        success: true,
-        status: 200,
-        message: "Otp sent successfully",
-      });
-    }
-  } catch (error: any) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-    });
-  }
-};
-export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
-  const { mobile, countryCode, otp } = req.body;
-  try {
-    const user = await User.findOne({
-      phone: mobile,
-      countryCode: countryCode,
-    });
-    if (!user) {
-      return res.status(200).json({
-        success: false,
-        status: 200,
-        message: "User not found",
-      });
-    }
-    if (mobile && countryCode && otp) {
-      const verifyOtp = await checkVerification(countryCode, mobile, otp);
-      if (verifyOtp && verifyOtp.valid) {
-        const token = createJwtToken({ userId: user._id });
+// export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
+//   const { mobile, countryCode } = req.body;
+//   try {
+//     const checkUser = await User.findOne({
+//       phone: mobile,
+//       countryCode: countryCode,
+//     });
+//     if (!checkUser) {
+//       return res.status(200).json({
+//         success: false,
+//         status: 200,
+//         message: "User not found",
+//       });
+//     }
+//     if (mobile && countryCode) {
+//       // const sendSms = await sendVerification(mobile, countryCode);
+//       // if (sendSms) console.log(sendSms);
+//       return res.status(200).json({
+//         success: true,
+//         status: 200,
+//         message: "Otp sent successfully",
+//       });
+//     }
+//   } catch (error: any) {
+//     return res.status(500).json({
+//       status: 500,
+//       message: error.message,
+//     });
+//   }
+// };
+// export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
+//   const { mobile, countryCode, otp } = req.body;
+//   try {
+//     const user = await User.findOne({
+//       phone: mobile,
+//       countryCode: countryCode,
+//     });
+//     if (!user) {
+//       return res.status(200).json({
+//         success: false,
+//         status: 200,
+//         message: "User not found",
+//       });
+//     }
+//     if (mobile && countryCode && otp) {
+//       const verifyOtp = await checkVerification(countryCode, mobile, otp);
+//       if (verifyOtp && verifyOtp.valid) {
+//         const token = createJwtToken({ userId: user._id });
 
-        return res.status(200).json({
-          success: true,
-          status: 200,
-          data: {
-            token,
-          },
-          message: "Otp verified",
-        });
-      } else {
-        return res.status(200).json({
-          success: true,
-          status: 200,
-          message: "Invalid OTP",
-        });
-      }
-    }
-  } catch (error: any) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-    });
-  }
-};
+//         return res.status(200).json({
+//           success: true,
+//           status: 200,
+//           data: {
+//             token,
+//           },
+//           message: "Otp verified",
+//         });
+//       } else {
+//         return res.status(200).json({
+//           success: true,
+//           status: 200,
+//           message: "Invalid OTP",
+//         });
+//       }
+//     }
+//   } catch (error: any) {
+//     return res.status(500).json({
+//       status: 500,
+//       message: error.message,
+//     });
+//   }
+// };
 
-export const setNewPassword = async (req: Request, res: Response) => {
-  const userId = res.locals.user._id;
-  const { password } = req.body;
-  try {
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const userData = await User.findByIdAndUpdate(userId, {
-      password: hashedPassword,
-    });
-    return res.status(200).json({
-      success: true,
-      status: 200,
-      message: "password is changed successfully",
-    });
-  } catch (error: any) {
-    return res.status(403).json({
-      success: false,
-      status: 403,
-      message: error.message,
-    });
-  }
-};
+// export const setNewPassword = async (req: Request, res: Response) => {
+//   const userId = res.locals.user._id;
+//   const { password } = req.body;
+//   try {
+//     const hashedPassword = await bcrypt.hash(password, 12);
+//     const userData = await User.findByIdAndUpdate(userId, {
+//       password: hashedPassword,
+//     });
+//     return res.status(200).json({
+//       success: true,
+//       status: 200,
+//       message: "password is changed successfully",
+//     });
+//   } catch (error: any) {
+//     return res.status(403).json({
+//       success: false,
+//       status: 403,
+//       message: error.message,
+//     });
+//   }
+// };

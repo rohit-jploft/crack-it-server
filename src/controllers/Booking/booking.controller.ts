@@ -33,6 +33,7 @@ export const createBooking = async (req: Request, res: Response) => {
       user: ObjectId(value.expert),
     }).select("price");
     // Save the booking details
+    console.log(getTimeInDateStamp(value.startTime), "startTime");
     const checkIfalreadyBooked = await Booking.findOne({
       expert: ObjectId(value.expert),
       date: value.date,
@@ -46,7 +47,7 @@ export const createBooking = async (req: Request, res: Response) => {
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
         startTime: getTimeInDateStamp(value.startTime),
-        date: getDateInDateStamp(value.date),
+        date: value.date,
         skills: value.skills ? value.skills : [],
         duration: value.duration,
         timeZone: value.timeZone,
@@ -99,39 +100,238 @@ type queryData = {
   status: { $regex: string; $options: string };
   role: "USER" | "EXPERT";
 };
-export const getAllBooking = async (req: Request, res: Response) => {
-  const { userId, status, role } = req.query;
-  const currentPage = Number(req?.query?.page) + 1 || 1;
+const getTimeFromDate = (date: Date) => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  return `${hours}:${minutes}`;
+};
+// export const getAllBooking = async (req: Request, res: Response) => {
+//   const { userId, status, role, tabStatus } = req.query;
+//   const currentPage = Number(req?.query?.page) + 1 || 1;
+//   const currentDateTime = new Date();
+//   let limit = Number(req?.query?.limit) || 10;
 
+//   const skip = limit * (currentPage - 1);
+//   var query = <any>{};
+//   if (tabStatus) {
+//     if (tabStatus.toString().toUpperCase() === "UPCOMING") {
+//       query["$or"] = [
+//         { date: { $gte: currentDateTime } }, // Meetings on future days
+//         {
+//           date: currentDateTime, // Meetings on the current day but future times
+//           startTime: { $gte: currentDateTime },
+//         },
+//       ];
+//     }
+//     if (tabStatus.toString().toUpperCase() === "PAST") {
+//       query["$or"] = [
+//         { date: { $lt: currentDateTime } }, // Meetings on previous days
+//         {
+//           date: currentDateTime, // Meetings on the current day but past times
+//           endTime: { $lt: currentDateTime },
+//         },
+//       ];
+//     }
+//     if (tabStatus.toString().toUpperCase() === "CANCELLED") {
+//       query.status = "CANCELLED";
+//     }
+//   }
+//   if (userId) {
+//     query["$or"] = [
+//       { user: ObjectId(userId.toString()) },
+//       { expert: ObjectId(userId.toString()) },
+//     ];
+//   }
+//   if (status) query.status = { $regex: status.toString(), $options: "i" };
+
+//   try {
+//     const bookings = await Booking.find(query)
+//       .populate("jobCategory", "title")
+//       .populate("expert", "-password")
+//       .populate("user", "-password")
+//       .populate({
+//         path: "skills",
+//         select: "title",
+//         populate: {
+//           path: "parent",
+//           select: "title",
+//         },
+//       })
+//       .skip(skip)
+//       .limit(limit)
+//       .sort({ createdAt: -1 });
+//     const totalCount = await Booking.countDocuments(query);
+
+//     return res.status(200).json({
+//       success: true,
+//       status: 200,
+//       data: bookings,
+//       pagination: pagination(totalCount, currentPage, limit),
+//       message: "Booking details fetched successfully",
+//     });
+//   } catch (error: any) {
+//     // Return error if anything goes wrong
+//     return res.status(403).json({
+//       success: false,
+//       status: 403,
+//       message: error.message,
+//     });
+//   }
+// };
+export const getAllBooking = async (req: Request, res: Response) => {
+  const { userId, status, role, tabStatus } = req.query;
+  const currentPage = Number(req?.query?.page) + 1 || 1;
+  const currentDateTime = new Date();
   let limit = Number(req?.query?.limit) || 10;
 
   const skip = limit * (currentPage - 1);
-  var query = <queryData>{};
+
+  const matchQuery: any = {};
+  console.log(tabStatus?.toString().toUpperCase() === "UPCOMING");
+  if (tabStatus) {
+    if (tabStatus.toString().toUpperCase() === "UPCOMING") {
+      matchQuery["$or"] = [
+        { date: { $gte: currentDateTime }, status: { $ne: "CANCELLED" } }, // Meetings on future days
+        {
+          date: currentDateTime, // Meetings on the current day but future times
+          startTime: { $gte: currentDateTime },
+          status: { $ne: "CANCELLED" },
+        },
+      ];
+    }
+    if (tabStatus.toString().toUpperCase() === "PAST") {
+      matchQuery["$or"] = [
+        { date: { $lt: currentDateTime }, status: { $ne: "CANCELLED" } }, // Meetings on previous days
+        {
+          date: currentDateTime, // Meetings on the current day but past times
+          endTime: { $lt: currentDateTime },
+          status: { $ne: "CANCELLED" },
+        },
+      ];
+    }
+    if (tabStatus.toString().toUpperCase() === "CANCELLED") {
+      matchQuery.status = "CANCELLED";
+    }
+  }
 
   if (userId) {
-    if (role === "USER") query.user = ObjectId(userId.toString());
-    if (!role) query.user = ObjectId(userId.toString());
-    if (role === "EXPERT") query.expert = ObjectId(userId.toString());
+    if (tabStatus?.toString().toUpperCase() === "CANCELLED") {
+      matchQuery["$or"] = [
+        { user: ObjectId(userId.toString()) },
+        { expert: ObjectId(userId.toString()) },
+      ];
+      matchQuery.status = "CANCELLED";
+    } else {
+      matchQuery["$or"] = [
+        { user: ObjectId(userId.toString()) },
+        { expert: ObjectId(userId.toString()) },
+      ];
+      matchQuery.status = { $ne: "CANCELLED" };
+    }
   }
-  if (status) query.status = { $regex: status.toString(), $options: "i" };
 
+  if (status) {
+    matchQuery.status = { $regex: status.toString(), $options: "i" };
+  }
+  console.log(matchQuery);
   try {
-    const bookings = await Booking.find(query)
-      .populate("jobCategory", "title")
-      .populate("expert", "-password")
-      .populate("user","-password")
-      .populate({
-        path: "skills",
-        select: "title",
-        populate: {
-          path: "parent",
-          select: "title",
+    const aggregatePipeline: any[] = [
+      {
+        $match: matchQuery,
+      },
+      {
+        $lookup: {
+          from: "categories", // Change to the actual name of the collection
+          localField: "jobCategory",
+          foreignField: "_id",
+          as: "jobCategory",
         },
-      })
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
-    const totalCount = await Booking.countDocuments(query);
+      },
+      {
+        $unwind: {
+          path: "$jobCategory",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "experts", // Change to the actual name of the collection
+          localField: "expert",
+          foreignField: "user",
+          as: "expertData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$expertData",
+        },
+      },
+      {
+        $lookup: {
+          from: "users", // Change to the actual name of the collection
+          localField: "expert",
+          foreignField: "_id",
+          as: "expert",
+        },
+      },
+      {
+        $unwind: {
+          path: "$expert",
+        },
+      },
+      {
+        $lookup: {
+          from: "users", // Change to the actual name of the collection
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: {
+          path: "$user",
+        },
+      },
+      {
+        $lookup: {
+          from: "categories", // Change to the actual name of the collection
+          localField: "skills",
+          foreignField: "_id",
+          as: "skills",
+        },
+      },
+      {
+        $unwind: "$skills",
+      },
+      {
+        $lookup: {
+          from: "categories", // Change to the actual name of the collection
+          localField: "skills.parent",
+          foreignField: "_id",
+          as: "skills.parent",
+        },
+      },
+      {
+        $unwind: {
+          path: "$skills.parent",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ];
+
+    const bookings = await Booking.aggregate([...aggregatePipeline]);
+
+    const totalCount = await Booking.countDocuments(matchQuery);
+
     return res.status(200).json({
       success: true,
       status: 200,
@@ -148,7 +348,6 @@ export const getAllBooking = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const cancelBooking = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   try {
@@ -235,6 +434,48 @@ export const getAllBookingPayments = async (req: Request, res: Response) => {
       data: payments,
       pagination: pagination(totalCount, currentPage, limit),
       message: "Payment detail fetched successfully",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const getSingleBookingDetail = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  var finalRes;
+  try {
+    // const booking = await Booking.findById(bookingId)
+    //   .populate("expert", "firstName lastName email")
+    //   .populate("expert", "firstName lastName email");
+    // finalRes.booking = booking;
+
+    const payment: any = await BookingPayment.findOne({
+      booking: bookingId,
+    }).populate({
+      path: "booking",
+      populate: {
+        path: "expert user",
+        select: "-password",
+      },
+    });
+    const expert = await Expert.findOne({
+      user: ObjectId(payment?.booking?.expert?._id.toString()),
+    }).populate("jobCategory");
+
+    finalRes = {
+      booking: payment,
+      expertProfile: expert,
+    };
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: finalRes,
+      message: "Booking detail fetched successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

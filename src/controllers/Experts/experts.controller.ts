@@ -24,6 +24,9 @@ export const expertProfileSetup = async (req: Request, res: Response) => {
       });
     }
     console.log(value);
+
+    // check role is expert or not
+    const userData = await User.findById(value.user)
     // Save the company details
     const experts = await Expert.create(value);
     return res.status(200).json({
@@ -49,14 +52,15 @@ export const getExpertProfile = async (req: Request, res: Response) => {
       user: ObjectId(userId),
     })
       .populate("user", "firstName lastName email phone countryCode")
-      .populate("expertise", "title");
+      .populate("expertise", "title")
+      .populate("jobCategory", "title");
     const rating = await getExpertRating(userId.toString());
     return res.status(200).json({
       status: 200,
       success: true,
       data: {
-        user:getExpertsData,
-        rating
+        expert: getExpertsData,
+        rating,
       },
       message: "Experts profile detail",
     });
@@ -80,16 +84,132 @@ export const getExpertProfile = async (req: Request, res: Response) => {
 //   title: TitleRegex;
 // };
 
-export const getAllExpertsProfile = async (req: Request, res: Response) => {
-  const { search, categories } = req.query;
-  var query = {};
+// export const getAllExpertsProfile = async (req: Request, res: Response) => {
+//   const { search, categories } = req.query;
+//   var query = {};
+//   try {
+//     const profiles = await Expert.find();
+//     return res.status(200).json({
+//       status: 200,
+//       success: true,
+//       data: profiles,
+//       message: "Experts profiles fetched",
+//     });
+//   } catch (error: any) {
+//     // Return error if anything goes wrong
+//     return res.status(403).json({
+//       success: false,
+//       status: 403,
+//       message: error.message,
+//     });
+//   }
+// };
+
+export const getAllExpertBasedOnSearch = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const profiles = await Expert.find();
+    let { jobCategory, skills, search } = req.query;
+    let expertise: any = skills
+      ?.toString()
+      .split(",")
+      .map((item: string) => item.trim());
+
+    const pipeline = [];
+
+    if (jobCategory) {
+      pipeline.push({
+        $match: {
+          jobCategory: ObjectId(jobCategory.toString()),
+        },
+      });
+    }
+
+    if (skills && expertise?.length > 0) {
+      pipeline.push({
+        $match: {
+          expertise: { $in: expertise },
+        },
+      });
+    }
+
+    pipeline.push({
+      $lookup: {
+        from: "users", // Assuming the collection name is 'users'
+        localField: "user",
+        foreignField: "_id",
+        as: "user",
+        pipeline: [
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              phone: 1,
+              countryCode: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    });
+    pipeline.push({
+      $unwind: {
+        path: "$user",
+      },
+    });
+    pipeline.push({
+      $lookup: {
+        from: "categories", // Assuming the collection name is 'users'
+        localField: "jobCategory",
+        foreignField: "_id",
+        as: "jobCategory",
+      },
+    });
+    pipeline.push({
+      $unwind: {
+        path: "$jobCategory",
+      },
+    });
+    pipeline.push({
+      $lookup: {
+        from: "categories", // Assuming the collection name is 'users'
+        localField: "expertise",
+        foreignField: "_id",
+        as: "expertise",
+      },
+    });
+    // pipeline.push({
+    //   $unwind: {
+    //     path: "$expertiseData",
+    //     preserveNullAndEmptyArrays: true,
+    //   },
+    // });
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "user.firstName": { $regex: search, $options: "i" } },
+            { "user.lastName": { $regex: search, $options: "i" } },
+          ],
+        },
+      });
+    }
+    const experts = await Expert.aggregate(pipeline);
+    const list = await Promise.all(
+      experts.map(async (expert) => {
+        const rating = await getExpertRating(expert.user._id.toString());
+        return {
+          ...expert,
+          rating: rating,
+        };
+      })
+    );
     return res.status(200).json({
-      status: 200,
       success: true,
-      data: profiles,
-      message: "Experts profiles fetched",
+      status: 200,
+      data: list,
+      message: "Experts are listed according to your interest",
     });
   } catch (error: any) {
     // Return error if anything goes wrong
