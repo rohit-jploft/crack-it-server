@@ -5,6 +5,7 @@ import bookingSchema from "../../schemas/booking.schema";
 import Booking from "../../models/booking.model";
 import {
   addMinutesToDate,
+  addMinutesToTime,
   getDateInDateStamp,
   getTimeInDateStamp,
 } from "../../helper/helper";
@@ -18,7 +19,6 @@ export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
 
   const { error, value } = bookingSchema.validate(data);
-
   if (error) {
     return res.status(403).json({
       success: false,
@@ -33,29 +33,28 @@ export const createBooking = async (req: Request, res: Response) => {
       user: ObjectId(value.expert),
     }).select("price");
     // Save the booking details
-    console.log(getTimeInDateStamp(value.startTime), "startTime");
+    // console.log(getTimeInDateStamp("12:10:00"), "startTime");
     const checkIfalreadyBooked = await Booking.findOne({
       expert: ObjectId(value.expert),
       date: value.date,
-      startTime: getTimeInDateStamp(value.startTime),
-      status: "ACCEPTED",
+      startTime: value.startTime,
+      status: { $in: ["ACCEPTED", "REQUESTED"] },
     });
+    console.log(checkIfalreadyBooked);
     if (!checkIfalreadyBooked) {
       const bookingObj = new Booking({
         user: ObjectId(value.user),
         expert: ObjectId(value.expert),
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
-        startTime: getTimeInDateStamp(value.startTime),
+        startTime: value.startTime,
         date: value.date,
         skills: value.skills ? value.skills : [],
         duration: value.duration,
         timeZone: value.timeZone,
-        endTime: addMinutesToDate(
-          getTimeInDateStamp(value.startTime),
-          value.duration
-        ),
+        endTime: addMinutesToTime(value.startTime, value.duration),
       });
+      console.log(bookingObj);
       const getCommission: any = await Commission.findOne({
         type: "FIXED",
         isDeleted: false,
@@ -81,7 +80,9 @@ export const createBooking = async (req: Request, res: Response) => {
       });
     } else {
       return res.status(203).json({
-        message: `expert is already at ${value.startTime} on ${value.date}`,
+        type: "error",
+        status: 203,
+        message: `expert is already Booked at ${value.startTime} on ${value.date}`,
       });
     }
   } catch (error: any) {
@@ -187,7 +188,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
   const skip = limit * (currentPage - 1);
 
   const matchQuery: any = {};
-  console.log(tabStatus?.toString().toUpperCase() === "UPCOMING");
+  console.log(userId, status, role, tabStatus);
   if (tabStatus) {
     if (tabStatus.toString().toUpperCase() === "UPCOMING") {
       matchQuery["$or"] = [
@@ -216,16 +217,16 @@ export const getAllBooking = async (req: Request, res: Response) => {
 
   if (userId) {
     if (tabStatus?.toString().toUpperCase() === "CANCELLED") {
-      matchQuery["$or"] = [
-        { user: ObjectId(userId.toString()) },
-        { expert: ObjectId(userId.toString()) },
-      ];
+      // matchQuery["$or"] = [
+      //   { user: ObjectId(userId.toString()) },
+      //   { expert: ObjectId(userId.toString()) },
+      // ];
+      if (role === "USER") matchQuery.user = userId;
+      if (role === "EXPERT") matchQuery.expert = userId;
       matchQuery.status = "CANCELLED";
     } else {
-      matchQuery["$or"] = [
-        { user: ObjectId(userId.toString()) },
-        { expert: ObjectId(userId.toString()) },
-      ];
+      if (role === "USER") matchQuery.user = ObjectId(userId.toString());
+      if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
       matchQuery.status = { $ne: "CANCELLED" };
     }
   }
@@ -301,8 +302,17 @@ export const getAllBooking = async (req: Request, res: Response) => {
         },
       },
       {
-        $unwind: "$skills",
+        $addFields: {
+          skills: {
+            $arrayElemAt: ["$skills", 0],
+          },
+        },
       },
+      // {
+      //   $unwind: {
+      //     path:"$skills"
+      //   },
+      // },
       {
         $lookup: {
           from: "categories", // Change to the actual name of the collection
@@ -329,7 +339,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
     ];
 
     const bookings = await Booking.aggregate([...aggregatePipeline]);
-
+    console.log(bookings.length, "length");
     const totalCount = await Booking.countDocuments(matchQuery);
 
     return res.status(200).json({

@@ -1,0 +1,55 @@
+import { model, Schema, Document, Model, Types } from "mongoose";
+
+export interface WalletTransactionData {
+  amount: number;
+  type: "CREDIT" | "DEBIT";
+  status: 'pending' | 'success' | 'failed';
+  user: Types.ObjectId;
+  otherUser: Types.ObjectId;
+  isDeleted?: boolean;
+}
+
+export interface WalletTransactionDocument
+  extends WalletTransactionData,
+    Document {
+  //   Add any additional methods or virtual properties specific to this model
+}
+
+const walletTransactionSchema: Schema<WalletTransactionData> =
+  new Schema<WalletTransactionData>(
+    {
+      amount: {
+        type: Number,
+      },
+      type: {
+        type: String,
+        enums: ["CREDIT", "DEBIT"],
+      },
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+      otherUser: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+      status: {
+        type: String,
+        enum:['pending', 'success', 'failed'],
+        default:'success'
+      },
+      isDeleted: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    { timestamps: true }
+  );
+
+const WalletTransaction: Model<WalletTransactionDocument> =
+  model<WalletTransactionDocument>(
+    "WalletTransaction",
+    walletTransactionSchema
+  );
+
+export default WalletTransaction;

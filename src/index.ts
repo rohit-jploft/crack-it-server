@@ -21,6 +21,7 @@ import fs from "fs";
 import os from "os";
 import Chat from "./models/chat.model";
 import { ObjectId } from "./helper/RequestHelper";
+import { createTransaction } from "./controllers/Wallet/wallet.controller";
 //dot env
 dotenv.config();
 
@@ -142,7 +143,7 @@ io.on("connection", (socket) => {
   });
   socket.on("join_room", (chatId) => {
     socket.join(chatId);
-    console.log("room joined on" , chatId);
+    console.log("room joined on", chatId);
   });
 
   //send and get message
@@ -152,11 +153,11 @@ io.on("connection", (socket) => {
     if (chatData && chatData?.admin) {
       const adminUser = getUser(chatData?.admin);
     }
-    console.log(chat, "chatId")
+    console.log(chat, "chatId");
     socket.to(chat).emit("getMessage", {
       sender: sender,
       message: content,
-      _id:_id
+      _id: _id,
     });
   });
 
@@ -175,7 +176,12 @@ socketServer.listen(PORT || 4000, () => {
 // server.listen(5000);
 
 // chat --end
-
+// createTransaction(
+//   500,
+//   "CREDIT",
+//   ObjectId("64f6cbc30c64f2d23d76cd11"),
+//   ObjectId("64f960359e90d53ce804b6d3")
+// );
 async function connectDb() {
   try {
     await mongoose.connect(MONGO_URI, <ConnectionOptions>{

@@ -5,11 +5,11 @@ import {
   changePassword,
   createNewUser,
   deleteAccount,
-  // forgotPasswordVerifyOtp,
-  // forgotPasswordsendOtp,
+  forgotPasswordVerifyOtp,
+  forgotPasswordsendOtp,
   getUserDetail,
   loginUser,
-  // setNewPassword,
+  setNewPassword,
 } from "../controllers/Authentication/auth.controller";
 import { getAllUsers } from "../controllers/Admin/admin.controller";
 
@@ -25,9 +25,9 @@ router.post('/user/change-password', isAuthenticated, changePassword)
 
 
 // forgot password
-// router.post("/user/forgot-password/send-otp", forgotPasswordsendOtp);
-// router.post("/user/forgot-password/verify-otp", forgotPasswordVerifyOtp);
-// router.post("/user/forgot-password/set-password", isAuthenticated,setNewPassword);
+router.post("/user/forgot-password/send-otp", forgotPasswordsendOtp);
+router.post("/user/forgot-password/verify-otp", forgotPasswordVerifyOtp);
+router.post("/user/forgot-password/set-password", isAuthenticated,setNewPassword);
 
 
 // admin APIs

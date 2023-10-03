@@ -111,6 +111,7 @@ export const getAllExpertBasedOnSearch = async (
 ) => {
   try {
     let { jobCategory, skills, search } = req.query;
+    console.log(jobCategory)
     let expertise: any = skills
       ?.toString()
       .split(",")

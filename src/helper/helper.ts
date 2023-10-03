@@ -14,7 +14,7 @@ export function generateRandomNumber(): number {
 }
 
 // this function is used for storing time in mongodb ;
-export function getTimeInDateStamp(time: string): Date {
+export function getTimeInDateStamp(time: string): string {
   // time formatnew is HH:MM:SS in string type
   const today = new Date();
   let month: any = today.getMonth();
@@ -22,9 +22,7 @@ export function getTimeInDateStamp(time: string): Date {
     month = "0" + month.toString();
   }
   console.log(`${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`);
-  return new Date(
-    `${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`
-  );
+  return `${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`
 }
 export function getDateInDateStamp(date: string): Date {
   // date -- YYYY-MM-DD in string type
@@ -34,4 +32,22 @@ export function getDateInDateStamp(date: string): Date {
 
 export function addMinutesToDate(date: Date, minutesToAdd: number): Date {
   return new Date(date.getTime() + minutesToAdd * 60000);
+}
+export function addMinutesToTime(timeString:string, minutesToAdd:number) {
+  const [hours, minutes, seconds] = timeString.split(':').map(Number);
+
+  if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
+    const totalMinutes = hours * 60 + minutes + minutesToAdd;
+    const newHours = Math.floor(totalMinutes / 60) % 24;
+    const newMinutes = totalMinutes % 60;
+
+    // Format the new time components with leading zeros
+    const formattedHours = String(newHours).padStart(2, '0');
+    const formattedMinutes = String(newMinutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
+
+    return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  } else {
+    return null; // Invalid time format
+  }
 }

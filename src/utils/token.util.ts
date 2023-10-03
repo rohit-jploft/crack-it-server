@@ -6,8 +6,8 @@ interface Payload {
   userId: string;
 }
 
-export const createJwtToken = (payload: Payload): string => {
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "360h" });
+export const createJwtToken = (payload: Payload, expiresIn?:string): string => {
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn ? expiresIn : "360h" });
   return token;
 };
 

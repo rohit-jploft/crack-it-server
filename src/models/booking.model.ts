@@ -38,8 +38,16 @@ const bookingSchema: Schema<BookingData> = new Schema<BookingData>(
     },
     startTime: {
       type: Date,
+      default: null,
+        get: (v:any) => v?.toLocaleTimeString([], { hour12: false }),
+        set: (v:any) => new Date(`2023-10-20T${v}.000Z`)
     },
-    endTime: Date,
+    endTime: {
+      type:Date,
+      default: null,
+      get: (v:any) => v?.toLocaleTimeString([], { hour12: false }),
+      set: (v:any) => new Date(`2023-10-20T${v}.000Z`)
+    },
     status: {
       type: String,
       enum: ["REQUESTED", "CONFIRMED", "DECLINED", "COMPLETED", "CANCELLED"],
@@ -66,5 +74,11 @@ const Booking: Model<BookingDocument> = model<BookingDocument>(
   "Booking",
   bookingSchema
 );
+bookingSchema.set('toJSON', {
+  transform: (doc, ret, opt) => {
+      delete ret.__v;
+      return ret;
+  }
+});
 
 export default Booking;
