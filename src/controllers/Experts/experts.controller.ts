@@ -26,13 +26,23 @@ export const expertProfileSetup = async (req: Request, res: Response) => {
     console.log(value);
 
     // check role is expert or not
-    const userData = await User.findById(value.user)
+    const userData = await User.findById(value.user);
     // Save the company details
-    const experts = await Expert.create(value);
+    const experts = await Expert.findOne({ user: data.user });
+    if (experts) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        message: "Profile is already set",
+      });
+    } else {
+      var expData = await Expert.create(value);
+    }
+
     return res.status(200).json({
       status: 200,
       success: true,
-      data: experts,
+      data: expData,
     });
   } catch (error: any) {
     // Return error if anything goes wrong
@@ -111,7 +121,7 @@ export const getAllExpertBasedOnSearch = async (
 ) => {
   try {
     let { jobCategory, skills, search } = req.query;
-    console.log(jobCategory)
+    console.log(jobCategory);
     let expertise: any = skills
       ?.toString()
       .split(",")

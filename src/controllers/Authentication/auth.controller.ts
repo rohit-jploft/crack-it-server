@@ -38,6 +38,7 @@ export const createNewUser = async (req: Request, res: Response) => {
   if (IsUserExist) {
     return res.status(200).json({
       status: 200,
+      success:false,
       type: "error",
       message: USER_ALREADY_EXISTS,
     });
@@ -61,6 +62,7 @@ export const createNewUser = async (req: Request, res: Response) => {
       // return the success response for account creation
       return res.status(200).json({
         type: "success",
+        success:false,
         status: 200,
         message: "Account created successfully",
         data: {
@@ -100,7 +102,7 @@ export const loginUser = async (req: Request, res: Response) => {
     });
     if (role && role.toUpperCase() != IsUserExist?.role) {
       return res.status(200).json({
-        success: true,
+        success: false,
         type: "error",
         status: 306,
         message: `You need to be an ${role}`,
@@ -108,7 +110,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
     if (IsUserExist?.isDeleted) {
       return res.status(200).json({
-        success: true,
+        success: false,
         type: "error",
         status: 306,
         message: "Account is suspended",
@@ -126,7 +128,7 @@ export const loginUser = async (req: Request, res: Response) => {
       const doMatch = await bcrypt.compare(password, IsUserExist.password);
       if (doMatch) {
         const token = createJwtToken({ userId: IsUserExist._id });
-        const { firstName, lastName, email, _id, role } = IsUserExist;
+        const { firstName, lastName, email, _id, role, isExpertProfileVerified } = IsUserExist;
         const response = {
           success: true,
           status: 200,
@@ -137,7 +139,8 @@ export const loginUser = async (req: Request, res: Response) => {
               firstName,
               lastName,
               email,
-              role
+              role,
+              isExpertProfileVerified
             },
           },
           message: "Login SuccessFully",

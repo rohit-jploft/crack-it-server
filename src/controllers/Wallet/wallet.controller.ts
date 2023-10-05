@@ -163,14 +163,23 @@ export const createWithdrawRequest = async (req: Request, res: Response) => {
     });
   }
   try {
-    const withdrawal = await WithdrawalRequest.create(value);
+    const userWallet = await Wallet.findOne({ user: ObjectId(data.user) });
+    if (userWallet && userWallet.amount && userWallet.amount < data.amount) {
+      return res.status(200).json({
+        status: 202,
+        success: false,
+        message: "You cannot withdraw amount more than in your wallet",
+      });
+    } else {
+      const withdrawal = await WithdrawalRequest.create(value);
 
-    return res.status(200).json({
-      success: true,
-      status: 200,
-      data: withdrawal,
-      message: "withdrawal request created successfully",
-    });
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: withdrawal,
+        message: "withdrawal request created successfully",
+      });
+    }
   } catch (error: any) {
     // Return error if anything goes wrong
     return res.status(403).json({
@@ -193,11 +202,11 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
     query.user = ObjectId(userId.toString());
   }
   if (status) {
-    query.status = {$regex:status, $options:'i'};
+    query.status = { $regex: status, $options: "i" };
   }
   try {
     const requests = await WithdrawalRequest.find(query)
-      .populate("user", "firstName lastName phone countryCode email")
+      .populate("user", "firstName lastName phone countryCode email role")
       .skip(skip)
       .limit(limit);
     const totalCount = await WithdrawalRequest.countDocuments(query);

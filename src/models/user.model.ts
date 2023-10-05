@@ -11,6 +11,7 @@ interface UserData {
   termAndConditions: boolean;
   isPhoneVerified?: boolean;
   isEmailVerified?: boolean;
+  isExpertProfileVerified:boolean;
   isDeleted?: boolean;
 }
 
@@ -40,7 +41,7 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum:["SUPER_ADMIN", "USER", "ADMIN", "EXPERT"],
+      enum:["SUPER_ADMIN", "USER", "ADMIN", "EXPERT", "AGENCY"],
       default: "USER",
     },
     email: {
@@ -48,6 +49,10 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       trim: true,
       default: "",
       unique: true,
+    },
+    isExpertProfileVerified:{
+      type:Boolean,
+      default:false
     },
     password: {
       type: String,

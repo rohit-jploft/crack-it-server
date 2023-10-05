@@ -20,4 +20,7 @@ router.put("/cancel/:bookingId", cancelBooking);
 router.put("/accept/:bookingId", acceptBooking);
 router.get("/payments", getAllBookingPayments);
 
+
+
+
 export default router;

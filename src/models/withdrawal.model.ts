@@ -1,9 +1,10 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document, Types } from "mongoose";
 
 interface WithdrawalRequestData {
   user: Types.ObjectId;
+  bank: Types.ObjectId;
   amount: number;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: "Pending" | "Approved" | "Rejected";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,17 +15,20 @@ const withdrawalRequestSchema = new Schema<WithdrawalRequestDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User', // Reference to the user who made the request
-      
+      ref: "User", // Reference to the user who made the request
     },
     amount: {
       type: Number,
       required: true,
     },
+    bank: {
+      type: Schema.Types.ObjectId,
+      ref: "Bank",
+    },
     status: {
       type: String,
-      enum: ['Pending', 'Approved', 'Rejected'],
-      default: 'Pending',
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
     },
     createdAt: {
       type: Date,
@@ -38,6 +42,9 @@ const withdrawalRequestSchema = new Schema<WithdrawalRequestDocument>(
   { timestamps: true }
 );
 
-const WithdrawalRequest = model<WithdrawalRequestDocument>('WithdrawalRequest', withdrawalRequestSchema);
+const WithdrawalRequest = model<WithdrawalRequestDocument>(
+  "WithdrawalRequest",
+  withdrawalRequestSchema
+);
 
 export default WithdrawalRequest;

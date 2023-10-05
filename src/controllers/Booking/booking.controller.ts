@@ -369,8 +369,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
     return res.status(200).json({
       status: 200,
       success: true,
-      data: booking,
-      message: "Booking created successfully",
+      message: "Booking cancelled successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong
