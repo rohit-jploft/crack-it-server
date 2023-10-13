@@ -13,6 +13,10 @@ export const createCategory = async (req: Request, res: Response) => {
   try {
     const data: CategoryDocument = req.body;
     console.log(data);
+    if (req?.files) {
+      var { image }: any = req?.files;
+      var image = image[0]?.path?.replaceAll("\\", "/") || "";
+    }
 
     // Check validation error using JOI
     const { value, error } = CategorySchema.validate(data);
@@ -27,7 +31,7 @@ export const createCategory = async (req: Request, res: Response) => {
     }
 
     // Save the company details
-    const category = await Category.create(value);
+    const category = await Category.create({ ...value, image: image });
     return res.status(200).json({
       status: 200,
       success: true,

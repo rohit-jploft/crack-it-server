@@ -10,7 +10,7 @@ export interface WalletDocument extends WalletData, Document {
   //   Add any additional methods or virtual properties specific to this model
 }
 
-const walletSchema: Schema<WalletData> = new Schema<WalletData>(
+const walletSchema: Schema<WalletDocument> = new Schema<WalletDocument>(
   {
     amount: {
       type: Number,

@@ -10,6 +10,8 @@ import CommissionRoute from "./commission.route";
 import ChatRoute from "./chat.route";
 import TimeZoneRoute from "./timeZone.route";
 import BankRoute from "./bank.route";
+import PromoCodeRoute from "./promo.route";
+import PaymentRoute from "./payment.route";
 
 const router: Router = express.Router();
 
@@ -24,5 +26,7 @@ router.use("/commission", CommissionRoute);
 router.use("/chat", ChatRoute);
 router.use("/timezone", TimeZoneRoute);
 router.use("/bank", BankRoute);
+router.use("/promo", PromoCodeRoute);
+router.use("/payment", PaymentRoute);
 
 export default router;

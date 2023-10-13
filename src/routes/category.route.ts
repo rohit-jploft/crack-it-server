@@ -7,10 +7,15 @@ import {
   getAllcategory,
   updateCategory,
 } from "../controllers/Category/category.controller";
+import upload from "../middlewares/fileUploader";
 
 const router: Router = express.Router();
 
-router.post("/create", createCategory);
+router.post(
+  "/create",
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  createCategory
+);
 router.put("/update/:categoryId", updateCategory);
 router.put("/delete/:categoryId", deleteCategory);
 router.get("/get-all", getAllcategory);

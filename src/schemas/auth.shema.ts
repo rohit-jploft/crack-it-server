@@ -20,6 +20,24 @@ const signupSchema: Joi.ObjectSchema<signUpDto> = Joi.object<signUpDto>().keys({
   phone: Joi.number(),
   termAndConditions: Joi.bool().valid(true),
 });
+interface AgencysignUpDto {
+  agencyName:string;
+  password: string;
+  countryCode: string;
+  email: string;
+  role: string;
+  phone: number;
+  termAndConditions: boolean;
+}
+const AgencysignupSchema: Joi.ObjectSchema<AgencysignUpDto> = Joi.object<AgencysignUpDto>().keys({
+  agencyName: Joi.string().required(),
+  password: Joi.string().required(),
+  email: Joi.string().email().required(),
+  role: Joi.string().valid('AGENCY'),
+  countryCode: Joi.string(),
+  phone: Joi.number(),
+  termAndConditions: Joi.bool().valid(true),
+});
 interface loginDto {
   email: string;
   password: string;
@@ -40,4 +58,4 @@ const changePasswordSchema: Joi.ObjectSchema<changePasswordDto> =
     password: Joi.string().required(),
   });
 
-export { signupSchema, loginSchema ,changePasswordSchema};
+export { signupSchema, loginSchema ,changePasswordSchema,AgencysignupSchema};

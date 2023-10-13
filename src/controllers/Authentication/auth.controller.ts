@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import {
+  AgencysignupSchema,
   changePasswordSchema,
   loginSchema,
   signupSchema,
@@ -15,9 +16,12 @@ import { createJwtToken } from "../../utils/token.util";
 import { ObjectId } from "../../helper/RequestHelper";
 import { createWallet } from "../Wallet/wallet.controller";
 import { checkVerification, sendVerification } from "../../helper/smsService";
+import Expert from "../../models/experts.model";
 
 export const createNewUser = async (req: Request, res: Response) => {
   let data = req.body;
+
+  let role = req?.body?.role
   // check validation error using JOI
   const { error, value } = signupSchema.validate(data);
 
@@ -38,7 +42,7 @@ export const createNewUser = async (req: Request, res: Response) => {
   if (IsUserExist) {
     return res.status(200).json({
       status: 200,
-      success:false,
+      success: false,
       type: "error",
       message: USER_ALREADY_EXISTS,
     });
@@ -62,13 +66,77 @@ export const createNewUser = async (req: Request, res: Response) => {
       // return the success response for account creation
       return res.status(200).json({
         type: "success",
-        success:false,
+        success: true,
         status: 200,
         message: "Account created successfully",
         data: {
           userId: newUser._id,
           firstName: newUser.firstName,
           lastName: newUser.lastName,
+        },
+      });
+    } catch (error: any) {
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        message: error.message,
+      });
+    }
+  }
+};
+export const createNewAgency = async (req: Request, res: Response) => {
+  let data = req.body;
+
+  let role = req?.body?.role
+  // check validation error using JOI
+  const { error, value } = AgencysignupSchema.validate(data);
+
+  // Return if any validation error
+  if (error) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+  // check user exists or not
+  const IsUserExist = await User.findOne({
+    $or: [{ email: value.email.toLowerCase() }, { phone: value.phone }],
+  });
+
+  // if user exists
+  if (IsUserExist) {
+    return res.status(200).json({
+      status: 200,
+      success: false,
+      type: "error",
+      message: USER_ALREADY_EXISTS,
+    });
+  } else {
+    // if user does not exist in our database
+    // then create a new user in db
+    const hashedPassword = await bcrypt.hash(value.password, 12);
+    try {
+      const newUser = await User.create({
+        agencyName:value.agencyName,
+        email: value.email.toLowerCase(),
+        phone: value.phone,
+        role: "AGENCY",
+        password: hashedPassword,
+        countryCode: value.countryCode,
+        termAndConditions: true,
+      });
+      // save
+      await createWallet(newUser._id.toString());
+      // return the success response for account creation
+      return res.status(200).json({
+        type: "success",
+        success: false,
+        status: 200,
+        message: "Account created successfully",
+        data: {
+          userId: newUser._id,
+          name:newUser.agencyName
         },
       });
     } catch (error: any) {
@@ -128,7 +196,14 @@ export const loginUser = async (req: Request, res: Response) => {
       const doMatch = await bcrypt.compare(password, IsUserExist.password);
       if (doMatch) {
         const token = createJwtToken({ userId: IsUserExist._id });
-        const { firstName, lastName, email, _id, role, isExpertProfileVerified } = IsUserExist;
+        const {
+          firstName,
+          lastName,
+          email,
+          _id,
+          role,
+          isExpertProfileVerified,
+        } = IsUserExist;
         const response = {
           success: true,
           status: 200,
@@ -140,7 +215,7 @@ export const loginUser = async (req: Request, res: Response) => {
               lastName,
               email,
               role,
-              isExpertProfileVerified
+              isExpertProfileVerified,
             },
           },
           message: "Login SuccessFully",
@@ -160,7 +235,6 @@ export const loginUser = async (req: Request, res: Response) => {
     });
   }
 };
-
 //suspend account
 export const deleteAccount = async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -185,6 +259,31 @@ export const deleteAccount = async (req: Request, res: Response) => {
     });
   }
 };
+// permanent delete accunt
+export const permanentDeleteAccount = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findOne({ _id: ObjectId(userId) });
+
+    if (user?.role === "EXPERT") {
+      const expert = await Expert.deleteOne({ user: ObjectId(userId) });
+      await User.deleteOne({ _id: ObjectId(userId) });
+    }
+    await User.deleteOne({ _id: ObjectId(userId) });
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Your account deleted permanently",
+    });
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
 
 export const getUserDetail = async (req: Request, res: Response) => {
   const userId = res.locals.user._id;
@@ -195,7 +294,7 @@ export const getUserDetail = async (req: Request, res: Response) => {
       email: 1,
       phone: 1,
       role: 1,
-      countryCode:1
+      countryCode: 1,
     });
     return res.status(200).json({
       success: true,
@@ -266,6 +365,7 @@ export const changePassword = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
   const { mobile, countryCode } = req.body;
   try {
@@ -296,9 +396,12 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
-  const { mobile, countryCode, otp } = req.body;
   try {
+    console.log(req.body);
+
+    const { mobile, countryCode, otp } = req.body;
     const user = await User.findOne({
       phone: mobile,
       countryCode: countryCode,
@@ -312,12 +415,12 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
     }
     if (mobile && countryCode && otp) {
       // const verifyOtp = await checkVerification(countryCode, mobile, otp);
-      console.log(typeof otp)
+      console.log(typeof otp);
       const verifyOtp = {
-        valid:otp === 123456 ? true :false
-      }
+        valid: otp == 123456 ? true : false,
+      };
       if (verifyOtp && verifyOtp.valid) {
-        const token = createJwtToken({ userId: user._id }, '1h');
+        const token = createJwtToken({ userId: user._id }, "1h");
 
         return res.status(200).json({
           success: true,
@@ -329,7 +432,7 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
         });
       } else {
         return res.status(200).json({
-          success: true,
+          success: false,
           status: 203,
           message: "Invalid OTP",
         });

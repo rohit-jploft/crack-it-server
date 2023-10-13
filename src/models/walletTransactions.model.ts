@@ -15,8 +15,8 @@ export interface WalletTransactionDocument
   //   Add any additional methods or virtual properties specific to this model
 }
 
-const walletTransactionSchema: Schema<WalletTransactionData> =
-  new Schema<WalletTransactionData>(
+const walletTransactionSchema: Schema<WalletTransactionDocument> =
+  new Schema<WalletTransactionDocument>(
     {
       amount: {
         type: Number,

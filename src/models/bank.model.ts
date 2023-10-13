@@ -15,7 +15,7 @@ export interface BankDocument extends BankData, Document {
   //   Add any additional methods or virtual properties specific to this model
 }
 
-const BankSchema: Schema<BankData> = new Schema<BankData>(
+const BankSchema: Schema<BankDocument> = new Schema<BankDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,

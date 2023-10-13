@@ -2,6 +2,7 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 
 export interface ExpertsData {
     user:Types.ObjectId;
+    agency:Types.ObjectId;
     jobCategory:Types.ObjectId;
     description:string;
     expertise:Types.ObjectId[];
@@ -15,9 +16,13 @@ export interface ExpertsDocument extends ExpertsData, Document {
   // Add any additional methods or virtual properties specific to this model
 }
 
-const expertSchema: Schema<ExpertsData> = new Schema<ExpertsData>(
+const expertSchema: Schema<ExpertsDocument> = new Schema<ExpertsDocument>(
   {
     user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    agency: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },

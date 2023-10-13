@@ -19,8 +19,8 @@ export interface BookingPaymentDocument extends BookingPaymentData, Document {
   // Add any additional methods or virtual properties specific to this model
 }
 
-const bookingPaymentSchema: Schema<BookingPaymentData> =
-  new Schema<BookingPaymentData>(
+const bookingPaymentSchema: Schema<BookingPaymentDocument> =
+  new Schema<BookingPaymentDocument>(
     {
       booking: {
         type: Schema.Types.ObjectId,

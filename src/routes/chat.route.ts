@@ -3,6 +3,7 @@ import express, { Router } from "express";
 import { isAuthenticated } from "../middlewares/checkAuth";
 import {
   createConvoApi,
+  enterChatForAdmin,
   getConvoMessage,
   getUsersConversation,
   searchConversations,
@@ -20,6 +21,7 @@ router.post(
   upload.fields([{ name: "audio", maxCount: 1 }]),
   sendMessage
 );
+router.post("/enter/admin",isAuthenticated, enterChatForAdmin);
 
 // search conversations
 router.get("/search", searchConversations);

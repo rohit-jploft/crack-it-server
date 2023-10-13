@@ -11,8 +11,8 @@ export interface ExpertRatingDocument extends ExpertRatingData, Document {
   //   Add any additional methods or virtual properties specific to this model
 }
 
-const ExpertRatingSchema: Schema<ExpertRatingData> =
-  new Schema<ExpertRatingData>(
+const ExpertRatingSchema: Schema<ExpertRatingDocument> =
+  new Schema<ExpertRatingDocument>(
     {
       rating: {
         type: Number,

@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import schedule from 'node-schedule';
 import * as dotenv from "dotenv";
 import { PORT, MONGO_URI, NODE_ENV } from "./utils/constant";
 import { API_ENDPOINT_NOT_FOUND_ERR, SERVER_ERR } from "./utils/error";
@@ -21,7 +22,8 @@ import fs from "fs";
 import os from "os";
 import Chat from "./models/chat.model";
 import { ObjectId } from "./helper/RequestHelper";
-import { createTransaction } from "./controllers/Wallet/wallet.controller";
+import { createTransaction, createWallet } from "./controllers/Wallet/wallet.controller";
+import { makeStatusFromConfirmedToCompleted, startChatForConfirmedBookingBefore15Min } from "./scheduler/bookingScheduler";
 //dot env
 dotenv.config();
 
@@ -79,6 +81,11 @@ app.get("/", (req: Request, res: Response) => {
 
 // Routes
 app.use("/", router);
+
+
+schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted)
+schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
+
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {
@@ -176,12 +183,7 @@ socketServer.listen(PORT || 4000, () => {
 // server.listen(5000);
 
 // chat --end
-// createTransaction(
-//   500,
-//   "CREDIT",
-//   ObjectId("64f6cbc30c64f2d23d76cd11"),
-//   ObjectId("64f960359e90d53ce804b6d3")
-// );
+
 async function connectDb() {
   try {
     await mongoose.connect(MONGO_URI, <ConnectionOptions>{
@@ -192,6 +194,7 @@ async function connectDb() {
     // app.listen(PORT || 4000, () => {
     //   console.log(`Server listening on port ${PORT}`);
     // });
+   
     console.log("database connected");
   } catch (error) {
     console.log(error);

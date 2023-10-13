@@ -63,7 +63,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
     const chatConvo = await Chat.find({
-      $or: [{ participants: userId }, { admin: userId }],
+      $or: [{ participants: userId }, { admin: userId }, {superAdmin:userId}],
     })
       .populate("participants", "firstName lastName role")
       .populate("admin", "firstName lastName role");
@@ -242,6 +242,61 @@ export const searchConversations = async (req: Request, res: Response) => {
       message: "chats fetched successfully",
     });
   } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const enterChatForAdmin = async (req: Request, res: Response) => {
+  const { meetingId} = req.query;
+  const role =  res.locals.user.role;
+  console.log(role, "role")
+  try {
+    const chat:any = await Chat.findOne({ booking: meetingId });
+    console.log(chat)
+    if(!chat){
+      return res.status(200).json({
+        status:200,
+        success:false,
+        message:"Chat not created yet"
+      })
+    }
+    if(chat && chat?.admin && role === 'ADMIN'){
+      return res.status(200).json({
+        success:false,
+        status:200,
+        message:"Admin already entered into chat"
+      })
+    }
+    if(role=="ADMIN" && !chat.admin){
+      chat['admin'] = res.locals.user._id
+    }
+    if(chat && chat?.superAdmin && role === 'SUPER_ADMIN'){
+      return res.status(200).json({
+        success:false,
+        status:200,
+        message:"Super Admin already entered into chat"
+      })
+    }
+    if(role=="SUPER_ADMIN"){
+      console.log("yes super admin")
+      console.log(res.locals.user._id)
+      chat.superAdmin = res.locals.user._id
+    }
+    await chat.save();
+    return res.status(200).json({
+      success:true,
+      status:200,
+      data:{
+        chat:chat?._id
+      },
+      message:role + " entered into chat successFully"
+    })
+  } catch (error:any) {
     // Return error if anything goes wrong
     return res.status(403).json({
       success: false,

@@ -27,6 +27,10 @@ export const expertProfileSetup = async (req: Request, res: Response) => {
 
     // check role is expert or not
     const userData = await User.findById(value.user);
+    if (userData) {
+      userData.isExpertProfileVerified = true;
+      await userData.save();
+    }
     // Save the company details
     const experts = await Expert.findOne({ user: data.user });
     if (experts) {
@@ -36,7 +40,7 @@ export const expertProfileSetup = async (req: Request, res: Response) => {
         message: "Profile is already set",
       });
     } else {
-      var expData = await Expert.create(value);
+      var expData = await Expert.create({ ...value });
     }
 
     return res.status(200).json({

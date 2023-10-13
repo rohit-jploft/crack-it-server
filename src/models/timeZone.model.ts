@@ -11,7 +11,7 @@ export interface TimeZoneDocument extends TimeZoneData, Document {
   //   Add any additional methods or virtual properties specific to this model
 }
 
-const TimeZoneSchema: Schema<TimeZoneData> = new Schema<TimeZoneData>(
+const TimeZoneSchema: Schema<TimeZoneDocument> = new Schema<TimeZoneDocument>(
   {
     name: {
       type: String,

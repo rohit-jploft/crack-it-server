@@ -2,6 +2,7 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 
 export interface CategoryData {
   title: string;
+  image: string;
   parent?: Types.ObjectId;
   isDeleted?: boolean;
 }
@@ -10,7 +11,7 @@ export interface CategoryDocument extends CategoryData, Document {
 //   Add any additional methods or virtual properties specific to this model
 }
 
-const categorySchema: Schema<CategoryData> = new Schema<CategoryData>(
+const categorySchema: Schema<CategoryDocument> = new Schema<CategoryDocument>(
   {
     title: {
       type: String,
@@ -20,6 +21,9 @@ const categorySchema: Schema<CategoryData> = new Schema<CategoryData>(
     parent: {
       type: Schema.Types.ObjectId,
       ref: "Category",
+    },
+    image:{
+      type:String
     },
     isDeleted: {
       type: Boolean,

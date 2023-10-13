@@ -5,6 +5,7 @@ import {
   acceptBooking,
     cancelBooking,
   createBooking,
+  declinedBooking,
   getAllBooking,
   getAllBookingPayments,
   getSingleBookingDetail,
@@ -18,6 +19,7 @@ router.get("/get-all", getAllBooking);
 router.get("/single/:bookingId", getSingleBookingDetail);
 router.put("/cancel/:bookingId", cancelBooking);
 router.put("/accept/:bookingId", acceptBooking);
+router.put("/decline/:bookingId", declinedBooking);
 router.get("/payments", getAllBookingPayments);
 
 

@@ -13,7 +13,7 @@ export interface CommissionDocument extends CommissionData, Document {
 //   Add any additional methods or virtual properties specific to this model
 }
 
-const commissionSchema: Schema<CommissionData> = new Schema<CommissionData>(
+const commissionSchema: Schema<CommissionDocument> = new Schema<CommissionDocument>(
   {
     title: {
       type: String,

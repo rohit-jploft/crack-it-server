@@ -14,6 +14,7 @@ import Expert, { ExpertsDocument } from "../../models/experts.model";
 import Commission, { CommissionDocument } from "../../models/commission.model";
 import { pagination } from "../../helper/pagination";
 import { createConversation } from "../Chat/chat.controller";
+import Chat from "../../models/chat.model";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -188,47 +189,56 @@ export const getAllBooking = async (req: Request, res: Response) => {
   const skip = limit * (currentPage - 1);
 
   const matchQuery: any = {};
-  console.log(userId, status, role, tabStatus);
+  // console.log(userId, status, role, tabStatus);
+  if (!status) {
+    matchQuery.status;
+  }
+
   if (tabStatus) {
+    if (
+      tabStatus.toString().toUpperCase() === "REQUESTED" ||
+      tabStatus.toString().toUpperCase() === "NEW"
+    ) {
+      matchQuery.status = {$in:["REQUESTED", "ACCEPTED"] }
+    }
+
     if (tabStatus.toString().toUpperCase() === "UPCOMING") {
       matchQuery["$or"] = [
-        { date: { $gte: currentDateTime }, status: { $ne: "CANCELLED" } }, // Meetings on future days
-        {
-          date: currentDateTime, // Meetings on the current day but future times
-          startTime: { $gte: currentDateTime },
-          status: { $ne: "CANCELLED" },
-        },
+        { status: "CONFIRMED" }, // Meetings on future days
+        // {
+        //   date: currentDateTime, // Meetings on the current day but future times
+        //   startTime: { $gte: currentDateTime },
+        //   status: "CONFIRMED",
+        // },
       ];
     }
+   
     if (tabStatus.toString().toUpperCase() === "PAST") {
       matchQuery["$or"] = [
-        { date: { $lt: currentDateTime }, status: { $ne: "CANCELLED" } }, // Meetings on previous days
-        {
-          date: currentDateTime, // Meetings on the current day but past times
-          endTime: { $lt: currentDateTime },
-          status: { $ne: "CANCELLED" },
-        },
+        {  status: {$in:["DECLINED", "CANCELLED","COMPLETED"]} }, // Meetings on previous days
+        // {
+        //   date: currentDateTime, // Meetings on the current day but past times
+        //   endTime: { $lt: currentDateTime },
+        //   status: "COMPLETED",
+        // },
       ];
     }
-    if (tabStatus.toString().toUpperCase() === "CANCELLED") {
-      matchQuery.status = "CANCELLED";
-    }
+   
   }
 
   if (userId) {
-    if (tabStatus?.toString().toUpperCase() === "CANCELLED") {
+    // if (tabStatus?.toString().toUpperCase() === "CANCELLED") {
       // matchQuery["$or"] = [
       //   { user: ObjectId(userId.toString()) },
       //   { expert: ObjectId(userId.toString()) },
       // ];
-      if (role === "USER") matchQuery.user = userId;
-      if (role === "EXPERT") matchQuery.expert = userId;
-      matchQuery.status = "CANCELLED";
-    } else {
       if (role === "USER") matchQuery.user = ObjectId(userId.toString());
       if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
-      matchQuery.status = { $ne: "CANCELLED" };
-    }
+    //   matchQuery.status = "CANCELLED";
+    // } else {
+    //   if (role === "USER") matchQuery.user = ObjectId(userId.toString());
+    //   if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
+    // }
   }
 
   if (status) {
@@ -385,23 +395,71 @@ export const acceptBooking = async (req: Request, res: Response) => {
   let { bookingId } = req.params;
   try {
     // if payment done then
-    const booking = await Booking.findByIdAndUpdate(
-      ObjectId(bookingId),
-      { status: "ACCEPTED" },
-      { new: true }
-    );
-    const bookingpayment = await BookingPayment.findOneAndUpdate(
-      { booking: ObjectId(bookingId) },
-      { status: "PAID" },
-      { new: true }
-    );
-    if (booking && bookingpayment) {
-      await createConversation([booking.expert, booking.user], booking._id);
+    const booking: any = await Booking.findById(ObjectId(bookingId));
+    if (booking?.status === "ACCEPTED") {
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        message: "Booking request is already accepted",
+      });
+    }
+    booking.status = "ACCEPTED";
+    await booking?.save();
+    
+    if (booking) {
+      // const chat = await Chat.findOne({ booking: ObjectId(bookingId) });
+      // console.log(chat);
+      // if (!chat) {
+      //   await createConversation(
+      //     [booking?.expert, booking?.user],
+      //     ObjectId(bookingId)
+      //   );
+      // }
       return res.status(200).json({
         status: 200,
         success: true,
         data: booking,
         message: "Booking request accepted successfully",
+      });
+    }
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+export const declinedBooking = async (req: Request, res: Response) => {
+  let { bookingId } = req.params;
+  try {
+    // if payment done then
+    const booking: any = await Booking.findById(ObjectId(bookingId));
+    if (booking?.status === "DECLINED") {
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        message: "Booking request is already declined",
+      });
+    }
+    booking.status = "DECLINED";
+    await booking?.save();
+    
+    if (booking) {
+      // const chat = await Chat.findOne({ booking: ObjectId(bookingId) });
+      // console.log(chat);
+      // if (!chat) {
+      //   await createConversation(
+      //     [booking?.expert, booking?.user],
+      //     ObjectId(bookingId)
+      //   );
+      // }
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        data: booking,
+        message: "Booking request declined successfully",
       });
     }
   } catch (error: any) {

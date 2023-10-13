@@ -9,7 +9,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
     const totalUser = await User.countDocuments({ role: "USER" });
     const totalExpert = await User.countDocuments({ role: "EXPERT" });
     const totalMeetingCompleted =
-      (await Booking.countDocuments({ status: "ACCEPTED" })) || 0;
+      (await Booking.countDocuments({ status: "CONFIRMED" })) || 0;
     // const totalEarning = await BookingPayment.countDocuments({status:"PAID"}) || 0;
     // Define the aggregation pipeline
     const pipeline = [

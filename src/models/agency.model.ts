@@ -1,9 +1,7 @@
 import { model, Schema, Document, Model, Types } from "mongoose";
 
-interface UserData {
-  firstName: string;
-  lastName: string;
-  agencyName:string;
+interface AgencyData {
+  name: string;
   phone: number;
   countryCode: string;
   password: string;
@@ -12,28 +10,18 @@ interface UserData {
   termAndConditions: boolean;
   isPhoneVerified?: boolean;
   isEmailVerified?: boolean;
-  isExpertProfileVerified:boolean;
+  isAgencyProfileVerified: boolean;
   isDeleted?: boolean;
 }
 
-interface UserDocument extends UserData, Document {
+interface AgencyDocument extends AgencyData, Document {
   // Add any additional methods or virtual properties specific to this model
 }
 
-const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
+const agencySchema: Schema<AgencyDocument> = new Schema<AgencyDocument>(
   {
-    firstName: {
+    name: {
       type: String,
-      trim: true,
-      default: "",
-    },
-    agencyName:{
-      type:String
-    },
-    lastName: {
-      type: String,
-      trim: true,
-      default: "",
     },
     phone: {
       type: Number,
@@ -45,8 +33,8 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum:["SUPER_ADMIN", "USER", "ADMIN", "EXPERT", "AGENCY"],
-      default: "USER",
+      enum: ["AGENCY"],
+      default: "AGENCY",
     },
     email: {
       type: String,
@@ -54,9 +42,9 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       default: "",
       unique: true,
     },
-    isExpertProfileVerified:{
-      type:Boolean,
-      default:false
+    isAgencyProfileVerified: {
+      type: Boolean,
+      default: false,
     },
     password: {
       type: String,
@@ -74,13 +62,16 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       require: true,
     },
     isDeleted: {
-        type: Boolean,
-        default: false,
-      },
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
-const User: Model<UserDocument> = model<UserDocument>("User", userSchema);
+const Agency: Model<AgencyDocument> = model<AgencyDocument>(
+  "Agency",
+  agencySchema
+);
 
-export default User;
+export default Agency;

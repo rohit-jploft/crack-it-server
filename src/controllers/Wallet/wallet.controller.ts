@@ -34,7 +34,7 @@ export const createTransaction = async (
     if (!Types.ObjectId.isValid(user) || !Types.ObjectId.isValid(otherUser)) {
       return { type: "error", message: "Invalid IDs" };
     }
-
+    var otherUserWallet;
     // Check the user's wallet balance
     const userWallet = await Wallet.findOne({ user });
 
@@ -44,7 +44,7 @@ export const createTransaction = async (
 
     // Check the otherUser's wallet balance (only for CREDIT transactions)
     if (type === "CREDIT") {
-      const otherUserWallet = await Wallet.findOne({ user: otherUser });
+      otherUserWallet = await Wallet.findOne({ user: otherUser });
 
       if (!otherUserWallet) {
         return { type: "error", message: "Other user wallet not found" };
@@ -207,6 +207,8 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
   try {
     const requests = await WithdrawalRequest.find(query)
       .populate("user", "firstName lastName phone countryCode email role")
+      .populate("bank")
+      .sort({createdAt:-1})
       .skip(skip)
       .limit(limit);
     const totalCount = await WithdrawalRequest.countDocuments(query);

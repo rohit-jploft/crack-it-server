@@ -1,4 +1,11 @@
-import mongoose, { model, Schema, Document, Model, Types, Date } from "mongoose";
+import mongoose, {
+  model,
+  Schema,
+  Document,
+  Model,
+  Types,
+  Date,
+} from "mongoose";
 
 export interface BookingData {
   user: Types.ObjectId;
@@ -11,14 +18,14 @@ export interface BookingData {
   timeZone: string;
   endTime: Date;
   skills: Types.ObjectId[];
-  status: "REQUESTED" | "CONFIRMED" | "DECLINED" | "COMPLETED" | "CANCELLED";
+  status: "REQUESTED" | "CONFIRMED" | "DECLINED" | "COMPLETED" | "CANCELLED" | "ACCEPTED";
 }
 
 export interface BookingDocument extends BookingData, Document {
   // Add any additional methods or virtual properties specific to this model
 }
 
-const bookingSchema: Schema<BookingData> = new Schema<BookingData>(
+const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -39,18 +46,25 @@ const bookingSchema: Schema<BookingData> = new Schema<BookingData>(
     startTime: {
       type: Date,
       default: null,
-        get: (v:any) => v?.toLocaleTimeString([], { hour12: false }),
-        set: (v:any) => new Date(`2023-10-20T${v}.000Z`)
+      get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
+      set: (v: any) => new Date(`2023-10-20T${v}.000Z`),
     },
     endTime: {
-      type:Date,
+      type: Date,
       default: null,
-      get: (v:any) => v?.toLocaleTimeString([], { hour12: false }),
-      set: (v:any) => new Date(`2023-10-20T${v}.000Z`)
+      get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
+      set: (v: any) => new Date(`2023-10-20T${v}.000Z`),
     },
     status: {
       type: String,
-      enum: ["REQUESTED", "CONFIRMED", "DECLINED", "COMPLETED", "CANCELLED"],
+      enum: [
+        "REQUESTED",
+        "ACCEPTED",
+        "CONFIRMED",
+        "DECLINED",
+        "COMPLETED",
+        "CANCELLED",
+      ],
       default: "REQUESTED",
     },
     date: {
@@ -59,7 +73,7 @@ const bookingSchema: Schema<BookingData> = new Schema<BookingData>(
     timeZone: String,
     skills: {
       type: [Schema.Types.ObjectId],
-      ref:"Category",
+      ref: "Category",
       require: true,
     },
     duration: {
@@ -69,16 +83,15 @@ const bookingSchema: Schema<BookingData> = new Schema<BookingData>(
   { timestamps: true }
 );
 
-
 const Booking: Model<BookingDocument> = model<BookingDocument>(
   "Booking",
   bookingSchema
 );
-bookingSchema.set('toJSON', {
+bookingSchema.set("toJSON", {
   transform: (doc, ret, opt) => {
-      delete ret.__v;
-      return ret;
-  }
+    delete ret.__v;
+    return ret;
+  },
 });
 
 export default Booking;
