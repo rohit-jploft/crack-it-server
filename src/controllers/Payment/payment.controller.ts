@@ -1,41 +1,59 @@
 import { Request, Response } from "express";
+import Booking from "../../models/booking.model";
+import BookingPayment from "../../models/bookingPayment.model";
+import { ObjectId } from "../../helper/RequestHelper";
+import { createConversation } from "../Chat/chat.controller";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = require("stripe")(stripeSecretKey);
 
 export const createPaymentIntent = async (req: Request, res: Response) => {
-    const { cardholderName, cardNumber, expiry, cvv } = req.body;
-
-    // You can use the Stripe library to handle the payment
-    // Make sure you have the `stripe` package installed
-    const stripe = require('stripe')(stripeSecretKey);
-  
-    try {
-      // Create a PaymentMethod for the card
-      const paymentMethod = await stripe.paymentMethods.create({
-        type: 'card',
-        card: {
-          number: cardNumber,
-          exp_month: parseInt(expiry.split('-')[1]),
-          exp_year: parseInt(expiry.split('-')[0]),
-          cvc: cvv,
-          name: cardholderName,
+  const { amount, meetingId } = req.body;
+  const lineItems = [
+    {
+      price_data: {
+        currency: "USD",
+        product_data: {
+          name: "Booking",
+          images: [],
         },
-      });
-      console.log(paymentMethod)
-      // Create a PaymentIntent and attach the PaymentMethod
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: 1000, // Replace with your payment amount in cents
-        currency: 'usd',
-        description: 'Sample Payment',
-        payment_method: paymentMethod.id,
-      });
-  
-      // Confirm the PaymentIntent to complete the payment
-      await stripe.paymentIntents.confirm(paymentIntent.id);
-  
-      // Handle successful payment
-      res.status(200).json({ success: true, message: 'Payment successful' });
-    } catch (error) {
-      console.error('Payment error:', error);
-      res.status(500).json({ success: false, message: 'Payment failed' });
+        unit_amount: parseFloat(amount) * 100,
+      },
+      quantity: 1,
+    },
+  ];
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: lineItems,
+    mode: "payment",
+    success_url: "https://crack-it-website.netlify.app/Mybookings",
+    cancel_url: "http://localhost:3000/failed",
+  });
+  console.log(session);
+  if (session) {
+    const meeting = await Booking.findByIdAndUpdate(
+      meetingId,
+      {
+        status: "CONFIRMED",
+      },
+      { new: true }
+    );
+    let meetArr = [];
+    if (meeting && meeting.user) {
+      meetArr.push(meeting?.user);
     }
+    if (meeting && meeting.expert) {
+      meetArr.push(meeting?.expert);
+    }
+
+    await createConversation(meetArr, meetingId);
+    const payment = await BookingPayment.findOneAndUpdate(
+      { booking: ObjectId(meetingId) },
+      {
+        status: "PAID",
+      },
+      { new: true }
+    );
+    console.log(meeting, payment);
+  }
+  return res.status(200).json({ id: session.id });
 };

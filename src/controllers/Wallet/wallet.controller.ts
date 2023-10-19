@@ -1,12 +1,13 @@
 import { Response, Request } from "express";
 
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
-import Wallet from "../../models/wallet.model";
+import Wallet, { WalletDocument } from "../../models/wallet.model";
 import withdrawalRequestSchema from "../../schemas/wallet.schema";
 import WithdrawalRequest from "../../models/withdrawal.model";
 import { Types } from "mongoose";
 import WalletTransaction from "../../models/walletTransactions.model";
 import { pagination } from "../../helper/pagination";
+import User from "../../models/user.model";
 
 export const createWallet = async (userId: string) => {
   try {
@@ -107,7 +108,8 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
     // Find and return wallet transactions for the user
     const transactions = await WalletTransaction.find({ user: userId })
       .populate("user", "firstName lastName")
-      .populate("otherUser", "firstName lastName");
+      .populate("otherUser", "firstName lastName")
+      .sort({ createdAt: -1 });
     const wallet = await createWallet(userId);
     res.status(200).json({
       success: true,
@@ -163,7 +165,7 @@ export const createWithdrawRequest = async (req: Request, res: Response) => {
     });
   }
   try {
-    const userWallet = await Wallet.findOne({ user: ObjectId(data.user) });
+    const userWallet: any = await Wallet.findOne({ user: ObjectId(data.user) });
     if (userWallet && userWallet.amount && userWallet.amount < data.amount) {
       return res.status(200).json({
         status: 202,
@@ -172,6 +174,9 @@ export const createWithdrawRequest = async (req: Request, res: Response) => {
       });
     } else {
       const withdrawal = await WithdrawalRequest.create(value);
+      userWallet.amount = userWallet.amount - value.amount;
+
+      await userWallet.save();
 
       return res.status(200).json({
         success: true,
@@ -208,7 +213,7 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
     const requests = await WithdrawalRequest.find(query)
       .populate("user", "firstName lastName phone countryCode email role")
       .populate("bank")
-      .sort({createdAt:-1})
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
     const totalCount = await WithdrawalRequest.countDocuments(query);
@@ -243,6 +248,17 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       });
     } else {
       withdrawal.status = status;
+      const admin = await User.findOne({ role: "ADMIN" });
+
+      const wallet:any = await Wallet.findOne({ user: withdrawal.user });
+      wallet.amount = wallet.amount + withdrawal.amount;
+      await wallet.save()
+      await createTransaction(
+        withdrawal?.amount,
+        "DEBIT",
+        withdrawal?.user,
+        admin?._id
+      );
       await withdrawal.save();
     }
 

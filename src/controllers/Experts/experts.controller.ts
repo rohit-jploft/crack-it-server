@@ -3,9 +3,10 @@ import { Response, Request } from "express";
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import { Types } from "mongoose";
 import Expert, { ExpertsDocument } from "../../models/experts.model";
-import expertSchema from "../../schemas/experts.schema";
+// import expertSchema from "../../schemas/experts.schema";
 import User from "../../models/user.model";
 import { getExpertRating } from "../Rating/rating.controller";
+import { expertSchema } from "../../schemas/experts.schema";
 
 // expert profile setup API
 export const expertProfileSetup = async (req: Request, res: Response) => {
@@ -225,6 +226,46 @@ export const getAllExpertBasedOnSearch = async (
       status: 200,
       data: list,
       message: "Experts are listed according to your interest",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const updateExpert = async (req: Request, res: Response) => {
+  const data = req.body;
+  const { userId } = req.params;
+  try {
+    const exp: any = await Expert.findOne({
+      user: ObjectId(userId.toString()),
+    });
+
+    if (!exp) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        message: "Expert not found",
+      });
+    }
+    exp.description = data.description ? data.description : exp.description;
+    exp.price = data.price ? data.price : exp.price;
+    exp.language = data.language ? data.language : exp.language;
+    exp.expertise = data.expertise ? data.expertise : exp.expertise;
+    exp.jobCategory = data.jobCategory ? data.jobCategory : exp.jobCategory;
+    exp.experience = data?.experience ? data?.experience : exp.experience;
+
+    await exp.save();
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: exp,
+      message:""
     });
   } catch (error: any) {
     // Return error if anything goes wrong

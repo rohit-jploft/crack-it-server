@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import PromoCode, { PromoCodeDocument } from "../../models/promoCode.model";
 import { promoCodeSchema } from "../../schemas/wallet.schema";
 import { ObjectId } from "../../helper/RequestHelper";
+import { pagination } from "../../helper/pagination";
 
 export const createPromoCode = async (req: Request, res: Response) => {
   try {
@@ -49,22 +50,30 @@ export const createPromoCode = async (req: Request, res: Response) => {
     });
   }
 };
-
 // Get all Promo Codes
 export const getAllPromoCodes = async (req: Request, res: Response) => {
   let { search, isActive } = req.query;
   let query: any = { isDeleted: false };
 
+  const currentPage = Number(req?.query?.page)  + 1 || 1;
+  let limit = Number(req?.query?.limit) || 10;
+  const skip = limit * (currentPage - 1);
+
   if (search) query.code = { $regex: search, $options: "i" };
   if (isActive) query.isActive = isActive == "Active" ? true : false;
+
   try {
     // Retrieve all Promo Codes from the database
-    const promoCodes = await PromoCode.find(query).sort({ createdAt: -1 });
-
+    const promoCodes = await PromoCode.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+    const totalCount = await PromoCode.countDocuments(query);
     return res.status(200).json({
       status: 200,
       success: true,
       data: promoCodes,
+      pagination:pagination(totalCount, currentPage, limit)
     });
   } catch (error: any) {
     // Handle any errors that occur during the retrieval process
@@ -76,7 +85,6 @@ export const getAllPromoCodes = async (req: Request, res: Response) => {
     });
   }
 };
-
 // Get a single Promo Code by ID
 export const getPromoCodeById = async (req: Request, res: Response) => {
   try {
@@ -108,7 +116,6 @@ export const getPromoCodeById = async (req: Request, res: Response) => {
     });
   }
 };
-
 // Update a Promo Code by ID
 export const updatePromoCodeById = async (req: Request, res: Response) => {
   try {
@@ -131,7 +138,7 @@ export const updatePromoCodeById = async (req: Request, res: Response) => {
     const updatedPromoCode = await PromoCode.findOne({
       _id: ObjectId(promoCodeId),
     });
-    
+
     console.log(updatedPromoCode);
     if (!updatedPromoCode) {
       return res.status(404).json({
@@ -164,7 +171,6 @@ export const updatePromoCodeById = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const makeActive = async (req: Request, res: Response) => {
   const { promoCodeId } = req.params;
   const { isActive } = req.body;
@@ -229,7 +235,10 @@ export const validatePromoCode = async (req: Request, res: Response) => {
   try {
     const { promoCode } = req.body;
 
-    const getAllCodes = await PromoCode.find({ isActive: true });
+    const getAllCodes = await PromoCode.find({
+      isActive: true,
+      expirationDate: { $lte: new Date() },
+    });
     let matchedPromoDoc;
     // Check if the promoCode is valid (customize this logic)
     let isValidPromoCode = false;

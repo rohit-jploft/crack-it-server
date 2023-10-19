@@ -168,6 +168,7 @@ export const loginUser = async (req: Request, res: Response) => {
     var IsUserExist = await User.findOne({
       email: email.toLowerCase(),
     });
+    console.log(IsUserExist)
     if (role && role.toUpperCase() != IsUserExist?.role) {
       return res.status(200).json({
         success: false,

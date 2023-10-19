@@ -234,6 +234,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       // ];
       if (role === "USER") matchQuery.user = ObjectId(userId.toString());
       if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
+      // if (role === "AGENCY") matchQuery.expert = ObjectId(userId.toString());
     //   matchQuery.status = "CANCELLED";
     // } else {
     //   if (role === "USER") matchQuery.user = ObjectId(userId.toString());
@@ -288,6 +289,19 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$expert",
+        },
+      },
+      {
+        $lookup: {
+          from: "bookingpayments", // Change to the actual name of the collection
+          localField: "_id",
+          foreignField: "booking",
+          as: "PaymentData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$PaymentData",
         },
       },
       {

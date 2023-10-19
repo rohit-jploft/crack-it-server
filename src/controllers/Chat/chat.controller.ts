@@ -21,7 +21,6 @@ export const createConversation = async (
     return error.message;
   }
 };
-
 export const createConvoApi = async (req: Request, res: Response) => {
   const { meetingId } = req.params;
   try {
@@ -63,7 +62,11 @@ export const getUsersConversation = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
     const chatConvo = await Chat.find({
-      $or: [{ participants: userId }, { admin: userId }, {superAdmin:userId}],
+      $or: [
+        { participants: { $in: [userId] } },
+        { admin: userId },
+        { superAdmin: userId },
+      ],
     })
       .populate("participants", "firstName lastName role")
       .populate("admin", "firstName lastName role");
@@ -92,6 +95,7 @@ export const sendMessage = async (req: Request, res: Response) => {
   if (req?.files) {
     var { audio }: any = req?.files;
     var media = audio[0]?.path?.replaceAll("\\", "/") || "";
+    console.log(audio);
   }
 
   if (error) {
@@ -105,7 +109,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const message = await Message.create({
       chat: ObjectId(value.chat),
       sender: ObjectId(value.sender),
-      type: audio ? "file" : "text",
+      type: audio ? audio[0].mimetype : 'text',
       content: value.content,
       media: audio ? media : "",
     });
@@ -145,7 +149,6 @@ export const getConvoMessage = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const searchConversations = async (req: Request, res: Response) => {
   const { search, userId } = req.query;
 
@@ -250,53 +253,52 @@ export const searchConversations = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const enterChatForAdmin = async (req: Request, res: Response) => {
-  const { meetingId} = req.query;
-  const role =  res.locals.user.role;
-  console.log(role, "role")
+  const { meetingId } = req.query;
+  const role = res.locals.user.role;
+  console.log(role, "role");
   try {
-    const chat:any = await Chat.findOne({ booking: meetingId });
-    console.log(chat)
-    if(!chat){
+    const chat: any = await Chat.findOne({ booking: meetingId });
+    console.log(chat);
+    if (!chat) {
       return res.status(200).json({
-        status:200,
-        success:false,
-        message:"Chat not created yet"
-      })
+        status: 200,
+        success: false,
+        message: "Chat not created yet",
+      });
     }
-    if(chat && chat?.admin && role === 'ADMIN'){
+    if (chat && chat?.admin && role === "ADMIN") {
       return res.status(200).json({
-        success:false,
-        status:200,
-        message:"Admin already entered into chat"
-      })
+        success: false,
+        status: 200,
+        message: "Admin already entered into chat",
+      });
     }
-    if(role=="ADMIN" && !chat.admin){
-      chat['admin'] = res.locals.user._id
+    if (role == "ADMIN" && !chat.admin) {
+      chat["admin"] = res.locals.user._id;
     }
-    if(chat && chat?.superAdmin && role === 'SUPER_ADMIN'){
+    if (chat && chat?.superAdmin && role === "SUPER_ADMIN") {
       return res.status(200).json({
-        success:false,
-        status:200,
-        message:"Super Admin already entered into chat"
-      })
+        success: false,
+        status: 200,
+        message: "Super Admin already entered into chat",
+      });
     }
-    if(role=="SUPER_ADMIN"){
-      console.log("yes super admin")
-      console.log(res.locals.user._id)
-      chat.superAdmin = res.locals.user._id
+    if (role == "SUPER_ADMIN") {
+      console.log("yes super admin");
+      console.log(res.locals.user._id);
+      chat.superAdmin = res.locals.user._id;
     }
     await chat.save();
     return res.status(200).json({
-      success:true,
-      status:200,
-      data:{
-        chat:chat?._id
+      success: true,
+      status: 200,
+      data: {
+        chat: chat?._id,
       },
-      message:role + " entered into chat successFully"
-    })
-  } catch (error:any) {
+      message: role + " entered into chat successFully",
+    });
+  } catch (error: any) {
     // Return error if anything goes wrong
     return res.status(403).json({
       success: false,

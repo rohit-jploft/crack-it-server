@@ -12,6 +12,8 @@ import TimeZoneRoute from "./timeZone.route";
 import BankRoute from "./bank.route";
 import PromoCodeRoute from "./promo.route";
 import PaymentRoute from "./payment.route";
+import AgencyRoute from "./agency.route";
+import ContactUs from "./contact.route";
 
 const router: Router = express.Router();
 
@@ -21,12 +23,14 @@ router.use("/expert", ExpertRoutes);
 router.use("/booking", BookingRoutes);
 router.use("/rating", RatingRoutes);
 router.use("/wallet", WalletRoute);
-router.use("/admin", AdminRoute); 
+router.use("/admin", AdminRoute);
 router.use("/commission", CommissionRoute);
 router.use("/chat", ChatRoute);
 router.use("/timezone", TimeZoneRoute);
 router.use("/bank", BankRoute);
 router.use("/promo", PromoCodeRoute);
 router.use("/payment", PaymentRoute);
+router.use("/agency", AgencyRoute);
+router.use("/contacts", ContactUs);
 
 export default router;
