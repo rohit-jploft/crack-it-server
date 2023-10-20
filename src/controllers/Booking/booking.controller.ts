@@ -322,21 +322,21 @@ export const getAllBooking = async (req: Request, res: Response) => {
           from: "categories", // Change to the actual name of the collection
           localField: "skills",
           foreignField: "_id",
-          as: "skills",
-        },
-      },
-      {
-        $addFields: {
-          skills: {
-            $arrayElemAt: ["$skills", 0],
-          },
+          as: "skillData",
         },
       },
       // {
-      //   $unwind: {
-      //     path:"$skills"
+      //   $addFields: {
+      //     skills: {
+      //       $arrayElemAt: ["$skills", 0],
+      //     },
       //   },
       // },
+      {
+        $unwind: {
+          path:"$skills"
+        },
+      },
       {
         $lookup: {
           from: "categories", // Change to the actual name of the collection
