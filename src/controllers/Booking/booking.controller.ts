@@ -199,7 +199,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       tabStatus.toString().toUpperCase() === "REQUESTED" ||
       tabStatus.toString().toUpperCase() === "NEW"
     ) {
-      matchQuery.status = {$in:["REQUESTED", "ACCEPTED"] }
+      matchQuery.status = { $in: ["REQUESTED", "ACCEPTED"] };
     }
 
     if (tabStatus.toString().toUpperCase() === "UPCOMING") {
@@ -212,10 +212,10 @@ export const getAllBooking = async (req: Request, res: Response) => {
         // },
       ];
     }
-   
+
     if (tabStatus.toString().toUpperCase() === "PAST") {
       matchQuery["$or"] = [
-        {  status: {$in:["DECLINED", "CANCELLED","COMPLETED"]} }, // Meetings on previous days
+        { status: { $in: ["DECLINED", "CANCELLED", "COMPLETED"] } }, // Meetings on previous days
         // {
         //   date: currentDateTime, // Meetings on the current day but past times
         //   endTime: { $lt: currentDateTime },
@@ -223,18 +223,17 @@ export const getAllBooking = async (req: Request, res: Response) => {
         // },
       ];
     }
-   
   }
 
   if (userId) {
     // if (tabStatus?.toString().toUpperCase() === "CANCELLED") {
-      // matchQuery["$or"] = [
-      //   { user: ObjectId(userId.toString()) },
-      //   { expert: ObjectId(userId.toString()) },
-      // ];
-      if (role === "USER") matchQuery.user = ObjectId(userId.toString());
-      if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
-      // if (role === "AGENCY") matchQuery.expert = ObjectId(userId.toString());
+    // matchQuery["$or"] = [
+    //   { user: ObjectId(userId.toString()) },
+    //   { expert: ObjectId(userId.toString()) },
+    // ];
+    if (role === "USER") matchQuery.user = ObjectId(userId.toString());
+    if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
+    // if (role === "AGENCY") matchQuery.expert = ObjectId(userId.toString());
     //   matchQuery.status = "CANCELLED";
     // } else {
     //   if (role === "USER") matchQuery.user = ObjectId(userId.toString());
@@ -334,7 +333,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       // },
       {
         $unwind: {
-          path:"$skills"
+          path: "$skills",
         },
       },
       {
@@ -419,7 +418,7 @@ export const acceptBooking = async (req: Request, res: Response) => {
     }
     booking.status = "ACCEPTED";
     await booking?.save();
-    
+
     if (booking) {
       // const chat = await Chat.findOne({ booking: ObjectId(bookingId) });
       // console.log(chat);
@@ -459,7 +458,7 @@ export const declinedBooking = async (req: Request, res: Response) => {
     }
     booking.status = "DECLINED";
     await booking?.save();
-    
+
     if (booking) {
       // const chat = await Chat.findOne({ booking: ObjectId(bookingId) });
       // console.log(chat);
@@ -537,13 +536,15 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
 
     const payment: any = await BookingPayment.findOne({
       booking: bookingId,
-    }).populate({
-      path: "booking",
-      populate: {
-        path: "expert user",
-        select: "-password",
-      },
-    });
+    })
+      .populate("promoCode")
+      .populate({
+        path: "booking",
+        populate: {
+          path: "expert user",
+          select: "-password",
+        },
+      });
     const expert = await Expert.findOne({
       user: ObjectId(payment?.booking?.expert?._id.toString()),
     }).populate("jobCategory");

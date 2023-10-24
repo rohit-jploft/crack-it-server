@@ -7,6 +7,7 @@ import Agency, { AgencyDocument } from "../../models/agency.model";
 import User from "../../models/user.model";
 import Expert, { ExpertsDocument } from "../../models/experts.model";
 import { ObjectId } from "../../helper/RequestHelper";
+import { getAgencyRating } from "../Rating/rating.controller";
 
 export const AgencyProfileSetup = async (req: Request, res: Response) => {
   try {
@@ -139,3 +140,34 @@ export const deleteAgencyExpert = async (req: Request, res: Response) => {
     });
   }
 };
+export const getAgencyProfile = async (req: Request, res: Response) => {
+    const { agencyId } = req.params;
+    try {
+      const getExpertsData = await Agency.findOne({
+        agency: ObjectId(agencyId),
+      })
+        .populate(
+          "agency",
+          "agencyName email phone countryCode isExpertProfileVerified"
+        )
+        .populate("expertise", "title")
+        .populate("jobCategory", "title");
+      const rating = await getAgencyRating(agencyId.toString());
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        data: {
+          expert: getExpertsData,
+          rating,
+        },
+        message: "Experts profile detail",
+      });
+    } catch (error: any) {
+      // Return error if anything goes wrong
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        message: error.message,
+      });
+    }
+  };

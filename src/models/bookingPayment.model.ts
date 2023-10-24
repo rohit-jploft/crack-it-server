@@ -9,7 +9,9 @@ import mongoose, {
 
 export interface BookingPaymentData {
   booking: Types.ObjectId;
+  promoCode: Types.ObjectId;
   totalAmount: number;
+  discountAmount: number;
   CommissionAmount: number;
   grandTotal: Number;
   status: "PAID" | "UNPAID";
@@ -29,7 +31,14 @@ const bookingPaymentSchema: Schema<BookingPaymentDocument> =
       totalAmount: {
         type: Number,
       },
-      
+      discountAmount: {
+        type: Number,
+      },
+      promoCode: {
+        type: Schema.Types.ObjectId,
+        ref: "PromoCode",
+      },
+
       CommissionAmount: {
         type: Number,
       },

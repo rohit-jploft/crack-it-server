@@ -3,6 +3,7 @@ import { Response, Request } from "express";
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import ExpertRating from "../../models/expertRating.model";
 import expertRatingSchema from "../../schemas/rating.schema";
+import AgencyRating from "../../models/agencyRating.model";
 
 export const rateExpert = async (req: Request, res: Response) => {
   const data = req.body;
@@ -52,6 +53,20 @@ export const rateExpert = async (req: Request, res: Response) => {
 
 export const getExpertRating = async (userId: string) => {
   const ratings = await ExpertRating.find({ expert: ObjectId(userId) });
+  let avgRating;
+  let totalRating = 0;
+  if (ratings.length > 0) {
+    for (let rating of ratings) {
+      totalRating = totalRating + rating.rating;
+    }
+    avgRating = totalRating / ratings.length;
+    return avgRating;
+  } else {
+    return 0;
+  }
+};
+export const getAgencyRating = async (agencyId: string) => {
+  const ratings = await AgencyRating.find({ agency: ObjectId(agencyId) });
   let avgRating;
   let totalRating = 0;
   if (ratings.length > 0) {

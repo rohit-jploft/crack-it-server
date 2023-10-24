@@ -16,7 +16,11 @@ router.post(
   upload.fields([{ name: "image", maxCount: 1 }]),
   createCategory
 );
-router.put("/update/:categoryId", updateCategory);
+router.put(
+  "/update/:categoryId",
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  updateCategory
+);
 router.put("/delete/:categoryId", deleteCategory);
 router.get("/get-all", getAllcategory);
 

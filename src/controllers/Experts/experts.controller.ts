@@ -66,7 +66,10 @@ export const getExpertProfile = async (req: Request, res: Response) => {
     const getExpertsData = await Expert.findOne({
       user: ObjectId(userId),
     })
-      .populate("user", "firstName lastName email phone countryCode isExpertProfileVerified")
+      .populate(
+        "user",
+        "firstName lastName email phone countryCode isExpertProfileVerified"
+      )
       .populate("expertise", "title")
       .populate("jobCategory", "title");
     const rating = await getExpertRating(userId.toString());
@@ -265,7 +268,7 @@ export const updateExpert = async (req: Request, res: Response) => {
       status: 200,
       success: true,
       data: exp,
-      message:""
+      message: "",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

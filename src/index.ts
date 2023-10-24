@@ -84,7 +84,7 @@ app.use("/", router);
 
 
 schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted)
-schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
+// schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
 
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {

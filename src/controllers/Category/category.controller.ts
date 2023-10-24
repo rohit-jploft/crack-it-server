@@ -79,7 +79,7 @@ export const getAllcategory = async (
   if (search) query.title = { $regex: search.toString(), $options: "i" };
 
   try {
-    const catorgies = await Category.find(query)
+    const catorgies = await Category.find(query).populate('parent')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -109,6 +109,10 @@ export const updateCategory = async (req: Request, res: Response) => {
   // Check validation error using JOI
   const { value, error } = CategorySchema.validate(data);
 
+  if (req?.files) {
+    var { image }: any = req?.files;
+    var image = image[0]?.path?.replaceAll("\\", "/") || "";
+  }
   // Return if any validation error
   if (error) {
     return res.status(403).json({
@@ -122,6 +126,7 @@ export const updateCategory = async (req: Request, res: Response) => {
     var payload = <any>{};
     if (data.title) payload.title = value.title;
     if (data.parent) payload.parent = value.parent;
+    if(image) payload.image = image;
     // Save the company details
     const category = await Category.findByIdAndUpdate(
       categoryId,

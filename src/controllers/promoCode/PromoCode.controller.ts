@@ -3,6 +3,8 @@ import PromoCode, { PromoCodeDocument } from "../../models/promoCode.model";
 import { promoCodeSchema } from "../../schemas/wallet.schema";
 import { ObjectId } from "../../helper/RequestHelper";
 import { pagination } from "../../helper/pagination";
+import Booking from "../../models/booking.model";
+import BookingPayment from "../../models/bookingPayment.model";
 
 export const createPromoCode = async (req: Request, res: Response) => {
   try {
@@ -55,7 +57,7 @@ export const getAllPromoCodes = async (req: Request, res: Response) => {
   let { search, isActive } = req.query;
   let query: any = { isDeleted: false };
 
-  const currentPage = Number(req?.query?.page)  + 1 || 1;
+  const currentPage = Number(req?.query?.page) + 1 || 1;
   let limit = Number(req?.query?.limit) || 10;
   const skip = limit * (currentPage - 1);
 
@@ -73,7 +75,7 @@ export const getAllPromoCodes = async (req: Request, res: Response) => {
       status: 200,
       success: true,
       data: promoCodes,
-      pagination:pagination(totalCount, currentPage, limit)
+      pagination: pagination(totalCount, currentPage, limit),
     });
   } catch (error: any) {
     // Handle any errors that occur during the retrieval process
@@ -233,33 +235,82 @@ export const deletePromoCodeById = async (req: Request, res: Response) => {
 // Sample function to validate a Promo Code (customize as needed)
 export const validatePromoCode = async (req: Request, res: Response) => {
   try {
-    const { promoCode } = req.body;
+    const { promoCode, bookingId } = req.body;
 
-    const getAllCodes = await PromoCode.find({
+    const getPromoCode = await PromoCode.findOne({
       isActive: true,
+      code: promoCode,
       expirationDate: { $lte: new Date() },
     });
-    let matchedPromoDoc;
-    // Check if the promoCode is valid (customize this logic)
-    let isValidPromoCode = false;
-    for (let code of getAllCodes) {
-      if (promoCode.toString() === code.code) {
-        isValidPromoCode = true;
-        matchedPromoDoc = code;
-      }
-    }
 
-    if (isValidPromoCode) {
+    if (getPromoCode) {
+      const bookingPayment: any = await BookingPayment.findOne({
+        booking: ObjectId(bookingId),
+      });
+      let discount;
+      discount =
+        getPromoCode.type === "FLAT"
+          ? getPromoCode.flatAmount
+          : (getPromoCode.discountPercentage * bookingPayment?.grandTotal) /
+            100;
+
+      bookingPayment.grandTotal = bookingPayment.grandTotal - discount;
+      bookingPayment.discountAmount = discount;
+
+      bookingPayment.promoCode = getPromoCode._id;
+      bookingPayment.d = getPromoCode._id;
+      await bookingPayment.save();
+      console.log(getPromoCode);
+      console.log(getPromoCode);
+
       return res.status(200).json({
         success: true,
-        data: matchedPromoDoc,
+        type:'success',
+        data: getPromoCode,
         message: "Promo Code is valid",
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        type:'error',
+        message: "Promo Code is invalid",
+      });
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+export const removePromoCode = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.body;
+
+    const bookingPayment: any = await BookingPayment.findOne({
+      booking: ObjectId(bookingId),
+    });
+
+    if (bookingPayment && bookingPayment.promoCode) {
+      let discount = bookingPayment.discountAmount;
+
+      bookingPayment.grandTotal = bookingPayment.grandTotal + discount;
+      bookingPayment.discountAmount = 0;
+      bookingPayment.promoCode = null;
+      await bookingPayment.save();
+
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        message: "Promo code removed successfully",
       });
     } else {
       return res.status(400).json({
         success: false,
         status: 200,
-        message: "Promo Code is invalid",
+        message: "No promo code applied on this booking ",
       });
     }
   } catch (error: any) {
