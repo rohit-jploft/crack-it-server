@@ -1,4 +1,5 @@
 import * as Joi from "joi";
+import { Roles } from "../utils/role";
 
 interface signUpDto {
   firstName: string;
@@ -15,13 +16,18 @@ const signupSchema: Joi.ObjectSchema<signUpDto> = Joi.object<signUpDto>().keys({
   lastName: Joi.string().required(),
   password: Joi.string().required(),
   email: Joi.string().email().required(),
-  role: Joi.string().valid("SUPER_ADMIN", "USER", "ADMIN", "EXPERT"),
+  role: Joi.string().valid(
+    Roles.SUPER_ADMIN,
+    Roles.USER,
+    Roles.ADMIN,
+    Roles.EXPERT
+  ),
   countryCode: Joi.string(),
   phone: Joi.number(),
   termAndConditions: Joi.bool().valid(true),
 });
 interface AgencysignUpDto {
-  agencyName:string;
+  agencyName: string;
   password: string;
   countryCode: string;
   email: string;
@@ -29,15 +35,16 @@ interface AgencysignUpDto {
   phone: number;
   termAndConditions: boolean;
 }
-const AgencysignupSchema: Joi.ObjectSchema<AgencysignUpDto> = Joi.object<AgencysignUpDto>().keys({
-  agencyName: Joi.string().required(),
-  password: Joi.string().required(),
-  email: Joi.string().email().required(),
-  role: Joi.string().valid('AGENCY'),
-  countryCode: Joi.string(),
-  phone: Joi.number(),
-  termAndConditions: Joi.bool().valid(true),
-});
+const AgencysignupSchema: Joi.ObjectSchema<AgencysignUpDto> =
+  Joi.object<AgencysignUpDto>().keys({
+    agencyName: Joi.string().required(),
+    password: Joi.string().required(),
+    email: Joi.string().email().required(),
+    role: Joi.string().valid("AGENCY"),
+    countryCode: Joi.string(),
+    phone: Joi.number(),
+    termAndConditions: Joi.bool().valid(true),
+  });
 interface loginDto {
   email: string;
   password: string;
@@ -58,4 +65,4 @@ const changePasswordSchema: Joi.ObjectSchema<changePasswordDto> =
     password: Joi.string().required(),
   });
 
-export { signupSchema, loginSchema ,changePasswordSchema,AgencysignupSchema};
+export { signupSchema, loginSchema, changePasswordSchema, AgencysignupSchema };

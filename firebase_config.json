@@ -1,9 +1,13 @@
 {
-  "apiKey": "AIzaSyBtMnlIbzeOOTf8FdTLcaT5NwN9OSY6ZPk",
-  "authDomain": "crackit-770ca.firebaseapp.com",
-  "projectId": "crackit-770ca",
-  "storageBucket": "crackit-770ca.appspot.com",
-  "messagingSenderId": "864608849971",
-  "appId": "1:864608849971:web:4cc0d980a1be0cc7065346",
-  "measurementId": "G-05ZL1EJVPE"
+  "type": "service_account",
+  "project_id": "crackit-d3bfb",
+  "private_key_id": "72ee1e4fe38efb6120e4bad7df062c41be790482",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC/LYNlRhKhapRh\nRYM5YqEZovif19d54z0Pb5nfEyE14snjYpaAzQ3Hm0VUMspwtJZ3tHEfR18oySii\nQhRlIk2pBq68soaTvBCz5Bfn7te4vDF5y8Xwj9dy6wwQMA7yX2fMEXcyLAnR4EWl\nVF5utokjjy22UmH5hFjqimf3wGj4Yg4/dztn0na17J+t9V9s8i470g5jKHuMfV59\ngVd3IN1C3T44VjTUF4FTzbkfjZzxmAhelb2hQ22BKYuZZSMy/iGd/pmfm2UK6vRS\nouwLLPvd7SE7LJ8j3+EcR1Mp3Jr4Ou728FxO0buIZkGBfJoaYzc/VZnLE6WvkChG\nYofFxPmTAgMBAAECggEACP5QHxSDzdogrs7BVJLCN12GSqaxuUcqWS6L04Wn20wW\n6T57DAYZbtlsEoDtKw4jwe/YHnuSC24jHjbzlKpfcuMglzniwNJpCr1hLoT62vLn\ndO5UGnP506sg/yXzng1E6cGslMyjjZ76R8PHSXgGzYhvwxLvDvjd4fKu32XKylxl\nrWLqgEnlpmXx/8Snykadf5gSFLUSZKl9gBJX5oTGWpVcDpjK/aJ0mV9zYtdGm28/\nAIJ28tBc4KgZsd8YMHHA6NvTp1aio1vOI1BeSRHnrCuRC1Ok4IQl3SnsfQ7Geps3\n3n4vC2ZyCdh/P2re1ZWxLIqSakpqn69IT8UB2VdiCQKBgQDpJTOunkbZ6eciLqow\nRNlUUBchrdnBhQGwdRI/ygplBkNmBeIDHhALMbbvOq/DI8k8QMFgEkYh+xiRGYPv\nhmeCutZg38/3Yy2u1nDT8rORobtPheW/FmxKwWWj8hNfpfsEb9Kr10oEhx8gQgJR\nnaNf0RccRqU9jHJkcpAOWInq1wKBgQDR6yIYhRcze5fZhmFkOOtzBZcUgDweRpmk\nb+jomy3QOaKtGuJVjA8U1Ee3hNJwCkUroNJVpaHl4tHCSVewbrs1y8NKVtAp0Ljp\njexgjLV4rVpSrACxX30wHJ9I1gfhHMy0qVKJ48S1vDr/tWEE8PTBaB7bcUORO0mb\nt3r8bbWrpQKBgQCfmwErfF0ilxbM9sc5bhiduIptWveknGpQo4SPuL+u8z+2mzZj\nTfRLxYfnc/SZEWmU3vvCyh/K6Xui8aW5lvhLrZ5PCUj0oafHdjQdVJwLiX2Sbiae\nzznpX0Y2muUaaKVUHz1IuISKXvo2+hleSB1s3dYFXHOIlBpHm4n02DXqVwKBgFb5\nx6zFKDHKmcYlKaEu/E8yF8EEyOP6eJprS+NkuHy4BLEYnIK5f14v/m8Jd2+4saQ8\nBCo8cHIhoquPW+fcWXEWthnNEn7g3lzW0wPGCUKxAOWUIs1bNTGECnNRSv54wlBw\nf6RmXRC3pvJgIoy7kY25KF/f9BDusbb1NN32TvmJAoGBAOXMoFfUQzMGW2YCYWhz\nN9o7A9QnjbXtFwK7Rd9BxB5yv3y1g+Msim0tG6wke5r2QzeoSYaxf8/Kwc2YbFCC\nFnL/hZRE+D4bcfGHISbmObBB5RQ8ovn8TYWrRxupWFkxdK2NMrriWLlV4zF3AiIA\nLN3PwE5jC+QKiJm/YR9eM6PM\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-7frna@crackit-d3bfb.iam.gserviceaccount.com",
+  "client_id": "112298356434372788465",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-7frna%40crackit-d3bfb.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
 }

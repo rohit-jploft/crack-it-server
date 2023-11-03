@@ -3,6 +3,9 @@ import Booking from "../../models/booking.model";
 import BookingPayment from "../../models/bookingPayment.model";
 import { ObjectId } from "../../helper/RequestHelper";
 import { createConversation } from "../Chat/chat.controller";
+import { createNotification } from "../Notifications/Notification.controller";
+import { NoticationMessage } from "../../utils/notificationMessageConstant";
+import { NotificationType } from "../../utils/NotificationType";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require("stripe")(stripeSecretKey);
 
@@ -26,11 +29,11 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     line_items: lineItems,
     mode: "payment",
     success_url: "https://crack-it-website.netlify.app/Mybookings",
-    cancel_url: "http://localhost:3000/failed",
+    cancel_url: "https://crack-it-website.netlify.app/Mybookings",
   });
   console.log(session);
   if (session) {
-    const meeting = await Booking.findByIdAndUpdate(
+    const meeting:any = await Booking.findByIdAndUpdate(
       meetingId,
       {
         status: "CONFIRMED",
@@ -45,7 +48,7 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       meetArr.push(meeting?.expert);
     }
 
-    await createConversation(meetArr, meetingId);
+    // await createConversation(meetArr, meetingId);
     const payment = await BookingPayment.findOneAndUpdate(
       { booking: ObjectId(meetingId) },
       {
@@ -54,6 +57,16 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       { new: true }
     );
     console.log(meeting, payment);
+    await createNotification(
+      meeting.user,
+      meeting.expert,
+      NoticationMessage.ConfirmedBooking.title,
+      NotificationType.Booking,
+      "web",
+      NoticationMessage.ConfirmedBooking.message,
+      { targetId: meeting?._id },
+      {}
+    );
   }
   return res.status(200).json({ id: session.id });
 };

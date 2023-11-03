@@ -242,7 +242,7 @@ export const validatePromoCode = async (req: Request, res: Response) => {
       code: promoCode,
       expirationDate: { $lte: new Date() },
     });
-
+    console.log(getPromoCode, "code object from db")
     if (getPromoCode) {
       const bookingPayment: any = await BookingPayment.findOne({
         booking: ObjectId(bookingId),

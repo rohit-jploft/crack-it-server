@@ -17,11 +17,13 @@ import { ObjectId } from "../../helper/RequestHelper";
 import { createWallet } from "../Wallet/wallet.controller";
 import { checkVerification, sendVerification } from "../../helper/smsService";
 import Expert from "../../models/experts.model";
+import { Roles } from "../../utils/role";
+import { existsSync, unlinkSync } from "fs";
 
 export const createNewUser = async (req: Request, res: Response) => {
   let data = req.body;
 
-  let role = req?.body?.role
+  let role = req?.body?.role;
   // check validation error using JOI
   const { error, value } = signupSchema.validate(data);
 
@@ -56,7 +58,7 @@ export const createNewUser = async (req: Request, res: Response) => {
         lastName: value.lastName,
         email: value.email.toLowerCase(),
         phone: value.phone,
-        role: value.role ? value.role : "USER",
+        role: value.role ? value.role : Roles.USER,
         password: hashedPassword,
         countryCode: value.countryCode,
         termAndConditions: true,
@@ -87,7 +89,7 @@ export const createNewUser = async (req: Request, res: Response) => {
 export const createNewAgency = async (req: Request, res: Response) => {
   let data = req.body;
 
-  let role = req?.body?.role
+  let role = req?.body?.role;
   // check validation error using JOI
   const { error, value } = AgencysignupSchema.validate(data);
 
@@ -118,7 +120,7 @@ export const createNewAgency = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(value.password, 12);
     try {
       const newUser = await User.create({
-        agencyName:value.agencyName,
+        agencyName: value.agencyName,
         email: value.email.toLowerCase(),
         phone: value.phone,
         role: "AGENCY",
@@ -136,7 +138,7 @@ export const createNewAgency = async (req: Request, res: Response) => {
         message: "Account created successfully",
         data: {
           userId: newUser._id,
-          name:newUser.agencyName
+          name: newUser.agencyName,
         },
       });
     } catch (error: any) {
@@ -168,7 +170,7 @@ export const loginUser = async (req: Request, res: Response) => {
     var IsUserExist = await User.findOne({
       email: email.toLowerCase(),
     });
-    console.log(IsUserExist)
+    console.log(IsUserExist);
     if (role && role.toUpperCase() != IsUserExist?.role) {
       return res.status(200).json({
         success: false,
@@ -266,7 +268,7 @@ export const permanentDeleteAccount = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({ _id: ObjectId(userId) });
 
-    if (user?.role === "EXPERT") {
+    if (user?.role === Roles.EXPERT) {
       const expert = await Expert.deleteOne({ user: ObjectId(userId) });
       await User.deleteOne({ _id: ObjectId(userId) });
     }
@@ -289,14 +291,7 @@ export const permanentDeleteAccount = async (req: Request, res: Response) => {
 export const getUserDetail = async (req: Request, res: Response) => {
   const userId = res.locals.user._id;
   try {
-    const userData = await User.findOne(ObjectId(userId), {
-      firstName: 1,
-      lastName: 1,
-      email: 1,
-      phone: 1,
-      role: 1,
-      countryCode: 1,
-    });
+    const userData = await User.findOne(ObjectId(userId));
     return res.status(200).json({
       success: true,
       status: 200,
@@ -460,6 +455,50 @@ export const setNewPassword = async (req: Request, res: Response) => {
       status: 200,
       message: "password is changed successfully",
     });
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const setProfilePicOfUser = async (req: Request, res: Response) => {
+  const {userId} = req.params;
+  try {
+    if (req?.files) {
+      var { profilePic }: any = req?.files;
+      if (!profilePic) {
+        return res.status(200).json({
+          success: false,
+          status: 206,
+          message: "Profile pic is required",
+        });
+      }
+      var media = profilePic[0]?.path?.replaceAll("\\", "/") || "";
+      
+      console.log(profilePic);
+      
+      console.log(ObjectId(userId.toString()), "id");
+
+      const user = await User.findOneAndUpdate(
+        { _id: ObjectId(userId.toString()) },
+        {
+          profilePhoto: media,
+        }
+        
+      );
+      if(user && user.profilePhoto){
+        profilePic && existsSync(user.profilePhoto) && unlinkSync(user.profilePhoto)
+      }
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: user,
+        message: "Profile pic saved",
+      });
+    }
   } catch (error: any) {
     return res.status(403).json({
       success: false,

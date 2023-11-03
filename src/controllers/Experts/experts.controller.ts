@@ -68,7 +68,7 @@ export const getExpertProfile = async (req: Request, res: Response) => {
     })
       .populate(
         "user",
-        "firstName lastName email phone countryCode isExpertProfileVerified"
+        "firstName lastName email phone countryCode isExpertProfileVerified profilePhoto"
       )
       .populate("expertise", "title")
       .populate("jobCategory", "title");
@@ -243,6 +243,7 @@ export const getAllExpertBasedOnSearch = async (
 export const updateExpert = async (req: Request, res: Response) => {
   const data = req.body;
   const { userId } = req.params;
+  console.log(data)
   try {
     const exp: any = await Expert.findOne({
       user: ObjectId(userId.toString()),
@@ -268,7 +269,7 @@ export const updateExpert = async (req: Request, res: Response) => {
       status: 200,
       success: true,
       data: exp,
-      message: "",
+      message: "Expert profile updated successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

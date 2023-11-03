@@ -14,6 +14,7 @@ import PromoCodeRoute from "./promo.route";
 import PaymentRoute from "./payment.route";
 import AgencyRoute from "./agency.route";
 import ContactUs from "./contact.route";
+import NotificationRoute from "./notification.route";
 
 const router: Router = express.Router();
 
@@ -32,5 +33,6 @@ router.use("/promo", PromoCodeRoute);
 router.use("/payment", PaymentRoute);
 router.use("/agency", AgencyRoute);
 router.use("/contacts", ContactUs);
+router.use("/notification", NotificationRoute);
 
 export default router;

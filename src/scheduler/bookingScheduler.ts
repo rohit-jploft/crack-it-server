@@ -1,6 +1,9 @@
 import { createConversation } from "../controllers/Chat/chat.controller";
+import { createNotification } from "../controllers/Notifications/Notification.controller";
 import { ObjectId } from "../helper/RequestHelper";
 import Booking from "../models/booking.model";
+import { NotificationType } from "../utils/NotificationType";
+import { NoticationMessage } from "../utils/notificationMessageConstant";
 
 export const makeStatusFromConfirmedToCompleted = async () => {
   try {
@@ -35,6 +38,15 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
           ObjectId(booking.user.toString()),
         ],
         booking._id
+      );
+      await createNotification(
+        ObjectId(booking.expert.toString()),
+        ObjectId(booking.user.toString()),
+        NoticationMessage.ChatInitiated.title,
+        NotificationType.Booking,
+        "web",
+        NoticationMessage.ChatInitiated.message,
+        { targetId: booking._id }
       );
     }
   } catch (error) {

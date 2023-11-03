@@ -1,4 +1,5 @@
 import { model, Schema, Document, Model, Types } from "mongoose";
+import { Roles } from "../utils/role";
 
 interface UserData {
   firstName: string;
@@ -8,7 +9,10 @@ interface UserData {
   countryCode: string;
   password: string;
   role?: string;
+  profilePhoto?:string;
   email: string;
+  webDeviceToken: string;
+  appDeviceToken: string;
   termAndConditions: boolean;
   isPhoneVerified?: boolean;
   isEmailVerified?: boolean;
@@ -46,7 +50,16 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     role: {
       type: String,
       enum:["SUPER_ADMIN", "USER", "ADMIN", "EXPERT", "AGENCY"],
-      default: "USER",
+      default:Roles.USER,
+    },
+    profilePhoto:{
+      type:String
+    },
+    webDeviceToken:{
+        type:String
+    },
+    appDeviceToken:{
+        type:String
     },
     email: {
       type: String,
@@ -76,7 +89,7 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     isDeleted: {
         type: Boolean,
         default: false,
-      },
+    },
   },
   { timestamps: true }
 );

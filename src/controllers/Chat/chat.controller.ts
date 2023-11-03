@@ -11,12 +11,17 @@ export const createConversation = async (
   bookingId: Types.ObjectId
 ) => {
   try {
-    const createChat = await Chat.create({
-      participants: users,
-      admin: null,
-      booking: bookingId,
-    });
-    return createChat;
+    const check = await Chat.findOne({ booking: bookingId });
+    if (!check) {
+      const createChat = await Chat.create({
+        participants: users,
+        admin: null,
+        booking: bookingId,
+      });
+      return createChat;
+    } else {
+      return check;
+    }
   } catch (error: any) {
     return error.message;
   }
@@ -66,10 +71,14 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         { participants: { $in: [userId] } },
         { admin: userId },
         { superAdmin: userId },
+        { agency: userId },
       ],
+      
     })
       .populate("participants", "firstName lastName role")
-      .populate("admin", "firstName lastName role");
+      .populate("admin", "firstName lastName role")
+      .populate("superAdmin", "firstName lastName role")
+      .populate("agency", "agencyName role");
     return res.status(200).json({
       success: true,
       status: 200,
@@ -87,15 +96,12 @@ export const getUsersConversation = async (req: Request, res: Response) => {
 };
 export const sendMessage = async (req: Request, res: Response) => {
   const data = req.body;
-  console.log(data);
 
   const { error, value } = messageJoiSchema.validate(data);
-  console.log(req.body);
 
   if (req?.files) {
     var { audio }: any = req?.files;
     var media = audio[0]?.path?.replaceAll("\\", "/") || "";
-    console.log(audio);
   }
 
   if (error) {
@@ -109,7 +115,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const message = await Message.create({
       chat: ObjectId(value.chat),
       sender: ObjectId(value.sender),
-      type: audio ? audio[0].mimetype : 'text',
+      type: audio ? audio[0].mimetype : "text",
       content: value.content,
       media: audio ? media : "",
     });
@@ -277,10 +283,26 @@ export const enterChatForAdmin = async (req: Request, res: Response) => {
     if (role == "ADMIN" && !chat.admin) {
       chat["admin"] = res.locals.user._id;
     }
+    if (chat && chat?.agency && role === "AGENCY") {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        data: {
+          chat: chat?._id,
+        },
+        message: "Agency already entered into chat",
+      });
+    }
+    if (role == "AGENCY" && !chat.agency) {
+      chat["agency"] = res.locals.user._id;
+    }
     if (chat && chat?.superAdmin && role === "SUPER_ADMIN") {
       return res.status(200).json({
         success: false,
         status: 200,
+        data: {
+          chat: chat?._id,
+        },
         message: "Super Admin already entered into chat",
       });
     }
@@ -297,6 +319,37 @@ export const enterChatForAdmin = async (req: Request, res: Response) => {
         chat: chat?._id,
       },
       message: role + " entered into chat successFully",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const getChatFromMeetingId = async (req: Request, res: Response) => {
+  const { meetingId } = req.params;
+  try {
+    const chatWindow: any = await Chat.findOne({
+      booking: ObjectId(meetingId),
+    });
+    if (!chatWindow) {
+      return res.status(208).json({
+        success: false,
+        status: 404,
+        message: "no chat found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: {
+        chat: chatWindow._id,
+      },
+      message: "Chat details fetched successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

@@ -9,12 +9,21 @@ import {
   getDateInDateStamp,
   getTimeInDateStamp,
 } from "../../helper/helper";
-import BookingPayment from "../../models/bookingPayment.model";
+import BookingPayment, {
+  BookingPaymentDocument,
+} from "../../models/bookingPayment.model";
 import Expert, { ExpertsDocument } from "../../models/experts.model";
 import Commission, { CommissionDocument } from "../../models/commission.model";
 import { pagination } from "../../helper/pagination";
 import { createConversation } from "../Chat/chat.controller";
 import Chat from "../../models/chat.model";
+import { Roles } from "../../utils/role";
+import { createNotification } from "../Notifications/Notification.controller";
+import { NoticationMessage } from "../../utils/notificationMessageConstant";
+import { NotificationType } from "../../utils/NotificationType";
+import { sendNotification } from "../../helper/notifications";
+import { createTransaction } from "../Wallet/wallet.controller";
+import { getSuperAdminId } from "../../helper/impFunctions";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -64,6 +73,15 @@ export const createBooking = async (req: Request, res: Response) => {
       totalCommission = getCommission?.amount;
 
       const savedBooking = await bookingObj.save();
+      await createNotification(
+        ObjectId(value.user),
+        ObjectId(value.expert),
+        NoticationMessage.BookingRequest.title,
+        NotificationType.Booking,
+        "web",
+        NoticationMessage.BookingRequest.message,
+        { targetId: savedBooking._id }
+      );
 
       let totalAmount = (value.duration / 60) * getPriceOfExpertPerHour?.price;
       const bookPaymentObj = new BookingPayment({
@@ -100,7 +118,7 @@ type queryData = {
   user?: Types.ObjectId;
   expert?: Types.ObjectId;
   status: { $regex: string; $options: string };
-  role: "USER" | "EXPERT";
+  role: Roles.USER | Roles.EXPERT;
 };
 const getTimeFromDate = (date: Date) => {
   const hours = date.getHours();
@@ -182,6 +200,7 @@ const getTimeFromDate = (date: Date) => {
 // };
 export const getAllBooking = async (req: Request, res: Response) => {
   const { userId, status, role, tabStatus } = req.query;
+  console.log("query", req.query);
   const currentPage = Number(req?.query?.page) + 1 || 1;
   const currentDateTime = new Date();
   let limit = Number(req?.query?.limit) || 10;
@@ -231,8 +250,8 @@ export const getAllBooking = async (req: Request, res: Response) => {
     //   { user: ObjectId(userId.toString()) },
     //   { expert: ObjectId(userId.toString()) },
     // ];
-    if (role === "USER") matchQuery.user = ObjectId(userId.toString());
-    if (role === "EXPERT") matchQuery.expert = ObjectId(userId.toString());
+    if (role === Roles.USER) matchQuery.user = ObjectId(userId.toString());
+    if (role === Roles.EXPERT) matchQuery.expert = ObjectId(userId.toString());
     // if (role === "AGENCY") matchQuery.expert = ObjectId(userId.toString());
     //   matchQuery.status = "CANCELLED";
     // } else {
@@ -258,9 +277,11 @@ export const getAllBooking = async (req: Request, res: Response) => {
           as: "jobCategory",
         },
       },
+
       {
         $unwind: {
           path: "$jobCategory",
+          preserveNullAndEmptyArrays: true,
         },
       },
 
@@ -275,6 +296,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$expertData",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -288,6 +310,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$expert",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -301,6 +324,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$PaymentData",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -314,6 +338,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$user",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -324,6 +349,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
           as: "skillData",
         },
       },
+
       // {
       //   $addFields: {
       //     skills: {
@@ -331,11 +357,12 @@ export const getAllBooking = async (req: Request, res: Response) => {
       //     },
       //   },
       // },
-      {
-        $unwind: {
-          path: "$skills",
-        },
-      },
+      // {
+      //   $unwind: {
+      //     path: "$skills",
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
       {
         $lookup: {
           from: "categories", // Change to the actual name of the collection
@@ -350,6 +377,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
           preserveNullAndEmptyArrays: true,
         },
       },
+
       {
         $skip: skip,
       },
@@ -361,8 +389,9 @@ export const getAllBooking = async (req: Request, res: Response) => {
       },
     ];
 
+    console.log(aggregatePipeline);
     const bookings = await Booking.aggregate([...aggregatePipeline]);
-    console.log(bookings.length, "length");
+
     const totalCount = await Booking.countDocuments(matchQuery);
 
     return res.status(200).json({
@@ -381,13 +410,38 @@ export const getAllBooking = async (req: Request, res: Response) => {
     });
   }
 };
+export const refundAmountForMeeting = async (meetingId: Types.ObjectId) => {
+  const superAdminId = await getSuperAdminId();
+  try {
+    const booking: any = await BookingPayment.findOne({ booking: meetingId });
+    if (booking?.status === "PAID") {
+      await createTransaction(
+        booking.totalAmount,
+        "CREDIT",
+        booking?.user,
+        superAdminId
+      );
+    }
+  } catch (error: any) {
+    return error.message;
+  }
+};
 export const cancelBooking = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   try {
-    const booking = await Booking.findOneAndUpdate(
+    const booking: any = await Booking.findOneAndUpdate(
       ObjectId(bookingId),
       { status: "CANCELLED" },
       { new: true }
+    );
+    await createNotification(
+      ObjectId(booking.user),
+      ObjectId(booking.expert),
+      NoticationMessage.CancelBooking.title,
+      NotificationType.Booking,
+      "web",
+      NoticationMessage.CancelBooking.message,
+      { targetId: booking._id }
     );
     return res.status(200).json({
       status: 200,
@@ -418,6 +472,15 @@ export const acceptBooking = async (req: Request, res: Response) => {
     }
     booking.status = "ACCEPTED";
     await booking?.save();
+    await createNotification(
+      ObjectId(booking.expert),
+      ObjectId(booking.user),
+      NoticationMessage.BookingAccept.title,
+      NotificationType.Booking,
+      "web",
+      NoticationMessage.BookingAccept.message,
+      { targetId: booking._id }
+    );
 
     if (booking) {
       // const chat = await Chat.findOne({ booking: ObjectId(bookingId) });

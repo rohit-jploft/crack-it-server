@@ -3,6 +3,7 @@ enum Roles {
   ADMIN = "ADMIN",
   EXPERT = "EXPERT",
   USER = "USER",
+  AGENCY = "AGENCY"
 }
 
 export { Roles };

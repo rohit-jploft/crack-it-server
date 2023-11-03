@@ -8,6 +8,7 @@ import {
   getUsersConversation,
   searchConversations,
   sendMessage,
+  getChatFromMeetingId
 } from "../controllers/Chat/chat.controller";
 import upload from "../middlewares/fileUploader";
 
@@ -16,6 +17,9 @@ const router: Router = express.Router();
 router.post("/conversation/create/:meetingId", createConvoApi);
 router.get("/conversation/user/:userId", getUsersConversation);
 router.get("/conversation/messages/:convoId", getConvoMessage);
+
+router.get("/get/from/meeting/:meetingId", getChatFromMeetingId)
+
 router.post(
   "/message/send",
   upload.fields([{ name: "audio", maxCount: 1 }]),
@@ -25,5 +29,6 @@ router.post("/enter/admin",isAuthenticated, enterChatForAdmin);
 
 // search conversations
 router.get("/search", searchConversations);
+
 
 export default router;

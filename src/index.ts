@@ -24,6 +24,8 @@ import Chat from "./models/chat.model";
 import { ObjectId } from "./helper/RequestHelper";
 import { createTransaction, createWallet } from "./controllers/Wallet/wallet.controller";
 import { makeStatusFromConfirmedToCompleted, startChatForConfirmedBookingBefore15Min } from "./scheduler/bookingScheduler";
+import { sendNotification } from "./helper/notifications";
+import { NoticationMessage } from "./utils/notificationMessageConstant";
 //dot env
 dotenv.config();
 
@@ -84,7 +86,7 @@ app.use("/", router);
 
 
 schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted)
-// schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
+schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
 
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
@@ -191,6 +193,13 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
+    // await sendNotification({
+    //     title: NoticationMessage.BookingAccept.title,
+    //     message: NoticationMessage.BookingAccept.message,
+    //     data: { targetId: "dsffd"},
+    //     token:
+    //       "cjiOxAdmTGvKFnpEWtR3ex:APA91bGe1jpzof0v7Cf3EGoOF3YTNsqzm6eVBfKPUuulgi-7vnu2vMrt636kTmR3eHPmEAcq3GzdjUzAWVgDcx2AIOxSNNEecFXA0K-H_VsWj8rUu93GE7p0LBoB3ayVKD6L49ucuvq8",
+    //   });
     // app.listen(PORT || 4000, () => {
     //   console.log(`Server listening on port ${PORT}`);
     // });

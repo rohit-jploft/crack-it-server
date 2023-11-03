@@ -3,6 +3,7 @@ import User from "../../models/user.model";
 import Booking from "../../models/booking.model";
 import BookingPayment from "../../models/bookingPayment.model";
 import { pagination } from "../../helper/pagination";
+import { Roles } from "../../utils/role";
 
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
@@ -94,7 +95,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     ];
   }
   if (isAdmin && isAdmin === "0" && !role) {
-    query.role = { $in: ["USER", "EXPERT"] };
+    query.role = { $in: [Roles.USER, Roles.EXPERT] };
   }
   if (isAdmin && isAdmin === "0" && role) {
     query.role = { $in: [role.toString()] };

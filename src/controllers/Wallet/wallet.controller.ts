@@ -8,6 +8,9 @@ import { Types } from "mongoose";
 import WalletTransaction from "../../models/walletTransactions.model";
 import { pagination } from "../../helper/pagination";
 import User from "../../models/user.model";
+import { createNotification } from "../Notifications/Notification.controller";
+import { NotificationType } from "../../utils/NotificationType";
+import { NoticationMessage } from "../../utils/notificationMessageConstant";
 
 export const createWallet = async (userId: string) => {
   try {
@@ -166,7 +169,7 @@ export const createWithdrawRequest = async (req: Request, res: Response) => {
   }
   try {
     const userWallet: any = await Wallet.findOne({ user: ObjectId(data.user) });
-    if (userWallet && userWallet.amount && userWallet.amount < data.amount) {
+    if (userWallet.amount < data.amount) {
       return res.status(200).json({
         status: 202,
         success: false,
@@ -249,10 +252,19 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
     } else {
       withdrawal.status = status;
       const admin = await User.findOne({ role: "ADMIN" });
-
-      const wallet:any = await Wallet.findOne({ user: withdrawal.user });
+      await createNotification(
+        admin?._id,
+        withdrawal.user,
+        NoticationMessage.withDrawalApproved.title,
+        NotificationType.Withdrawal,
+        "web",
+        NoticationMessage.withDrawalApproved.message,
+        { targetId: withdrawal?._id },
+        {}
+      );
+      const wallet: any = await Wallet.findOne({ user: withdrawal.user });
       wallet.amount = wallet.amount + withdrawal.amount;
-      await wallet.save()
+      await wallet.save();
       await createTransaction(
         withdrawal?.amount,
         "DEBIT",

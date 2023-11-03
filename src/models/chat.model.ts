@@ -4,9 +4,11 @@ interface IChat extends Document {
   participants: Types.ObjectId[];
   chatType: "individual" | "group";
   admin?: Types.ObjectId;
+  agency?: Types.ObjectId;
   superAdmin?: Types.ObjectId;
   booking?: Types.ObjectId;
   isDeleted?: boolean;
+  isClosed?: boolean;
   // Add other chat-specific fields as needed
 }
 
@@ -25,9 +27,17 @@ const chatSchema = new Schema<IChat>({
     type: Schema.Types.ObjectId,
     ref: "Booking",
   },
+  agency:{
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
   superAdmin: {
     type: Schema.Types.ObjectId,
     ref: "User",
+  },
+  isClosed:{
+    type: Boolean,
+    default: false,
   },
 
   isDeleted: {
