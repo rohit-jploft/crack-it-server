@@ -51,3 +51,35 @@ export function addMinutesToTime(timeString:string, minutesToAdd:number) {
     return null; // Invalid time format
   }
 }
+export async function getHoursBefore(startTime:Date) {
+  console.log(startTime, "starttime")
+  const currentTime = new Date();
+  let bookStartTime = new Date(startTime)
+  const timeDifference = bookStartTime.getTime() - currentTime.getTime();
+  const hoursBefore = timeDifference / (1000 * 60 * 60); // Milliseconds to hours
+  console.log(hoursBefore, "hello")
+  return hoursBefore;
+}
+
+
+export function combineTimestamps(dateTimestamp:Date, timeTimestamp:Date) {
+  // Create Date objects from the provided timestamps
+  const dateObj = new Date(dateTimestamp.toString());
+  const timeObj = new Date(timeTimestamp.toString());
+
+  // Extract date components
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth();
+  const day = dateObj.getDate();
+
+  // Extract time components
+  const hours = timeObj.getHours();
+  const minutes = timeObj.getMinutes();
+  const seconds = timeObj.getSeconds();
+  const milliseconds = timeObj.getMilliseconds();
+
+  // Create a new Date object with the combined date and time components
+  const combinedTimestamp = new Date(year, month, day, hours, minutes, seconds, milliseconds);
+
+  return combinedTimestamp;
+}

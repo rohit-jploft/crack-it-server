@@ -31,7 +31,8 @@ export const createTransaction = async (
   amount: number,
   type: "CREDIT" | "DEBIT",
   user: Types.ObjectId,
-  otherUser: Types.ObjectId
+  otherUser: Types.ObjectId,
+  title:string
 ) => {
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
@@ -66,6 +67,7 @@ export const createTransaction = async (
       type,
       user,
       otherUser,
+      title
     });
 
     // Create a new wallet transaction for the otherUser (reverse type)
@@ -74,6 +76,7 @@ export const createTransaction = async (
       type: type === "CREDIT" ? "DEBIT" : "CREDIT",
       user: otherUser,
       otherUser: user,
+      title,
     });
 
     // Save both transactions
@@ -269,7 +272,8 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
         withdrawal?.amount,
         "DEBIT",
         withdrawal?.user,
-        admin?._id
+        admin?._id,
+        "Withdraw"
       );
       await withdrawal.save();
     }

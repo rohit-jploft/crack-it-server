@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import mongoose, {
   model,
   Schema,
@@ -18,7 +19,13 @@ export interface BookingData {
   timeZone: string;
   endTime: Date;
   skills: Types.ObjectId[];
-  status: "REQUESTED" | "CONFIRMED" | "DECLINED" | "COMPLETED" | "CANCELLED" | "ACCEPTED";
+  status:
+    | "REQUESTED"
+    | "CONFIRMED"
+    | "DECLINED"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "ACCEPTED";
 }
 
 export interface BookingDocument extends BookingData, Document {
@@ -46,14 +53,46 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     startTime: {
       type: Date,
       default: null,
-      get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
-      set: (v: any) => new Date(`2023-10-20T${v}.000Z`),
+      // get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
+      set: (v: any) => {
+        const current = new Date();
+        let date: any = current.getDate();
+        let month: any = current.getMonth();
+        if (date < 10) {
+          date = "0" + date.toString();
+        }
+        if (month < 10) {
+          month = "0" + month.toString();
+        }
+        console.log(
+          "startTime",
+
+          `${current.getFullYear()}-${month}-${date}T${v}.000Z`
+        );
+        return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
+      },
     },
     endTime: {
       type: Date,
       default: null,
-      get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
-      set: (v: any) => new Date(`2023-10-20T${v}.000Z`),
+      // get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
+      set: (v: any) => {
+        const current = new Date();
+        let date: any = current.getDate() ;
+        let month: any = current.getMonth() + 1;
+        if (date < 10) {
+          date = "0" + date.toString();
+        }
+        if (month < 10) {
+          month = "0" + month.toString();
+        }
+        console.log(
+          "startTime",
+
+          `${current.getFullYear()}-${month}-${date}T${v}.000Z`
+        );
+        return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
+      },
     },
     status: {
       type: String,

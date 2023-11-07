@@ -1,4 +1,4 @@
-import { model, Schema, Document, Model, Types } from "mongoose";
+import mongoose, { model, Schema, Document, Model, Types } from "mongoose";
 import { Roles } from "../utils/role";
 
 interface UserData {
@@ -12,6 +12,7 @@ interface UserData {
   profilePhoto?:string;
   email: string;
   webDeviceToken: string;
+  referBy:Types.ObjectId;
   appDeviceToken: string;
   termAndConditions: boolean;
   isPhoneVerified?: boolean;
@@ -73,6 +74,10 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     },
     password: {
       type: String,
+    },
+    referBy:{
+      type:Schema.Types.ObjectId,
+      ref:"User"
     },
     isPhoneVerified: {
       type: Boolean,

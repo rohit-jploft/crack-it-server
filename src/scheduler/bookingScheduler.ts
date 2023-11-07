@@ -28,26 +28,30 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
         $lte: new Date(currentTime.getTime() + 15 * 60000),
         $gt: currentTime,
       },
+      // date:
       status: "CONFIRMED", // Adjust this to match your criteria for initiating chat conversations
     });
+    console.log(new Date(currentTime.getTime() + 15 * 60000))
+    console.log(currentTime, "currentTime")
+    console.log(upcomingBookings, "upcoming booking")
     // Iterate over the upcoming bookings and start chat conversations
     for (const booking of upcomingBookings) {
-      const convo = await createConversation(
-        [
-          ObjectId(booking.expert.toString()),
-          ObjectId(booking.user.toString()),
-        ],
-        booking._id
-      );
-      await createNotification(
-        ObjectId(booking.expert.toString()),
-        ObjectId(booking.user.toString()),
-        NoticationMessage.ChatInitiated.title,
-        NotificationType.Booking,
-        "web",
-        NoticationMessage.ChatInitiated.message,
-        { targetId: booking._id }
-      );
+      // const convo = await createConversation(
+      //   [
+      //     ObjectId(booking.expert.toString()),
+      //     ObjectId(booking.user.toString()),
+      //   ],
+      //   booking._id
+      // );
+      // await createNotification(
+      //   ObjectId(booking.expert.toString()),
+      //   ObjectId(booking.user.toString()),
+      //   NoticationMessage.ChatInitiated.title,
+      //   NotificationType.Booking,
+      //   "web",
+      //   NoticationMessage.ChatInitiated.message,
+      //   { targetId: booking._id }
+      // );
     }
   } catch (error) {
     return error;

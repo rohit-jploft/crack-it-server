@@ -24,6 +24,11 @@ import { NotificationType } from "../../utils/NotificationType";
 import { sendNotification } from "../../helper/notifications";
 import { createTransaction } from "../Wallet/wallet.controller";
 import { getSuperAdminId } from "../../helper/impFunctions";
+import {
+  createNewRefundRequest,
+  getRefundAmountFromBooking,
+} from "../Refund/refund.controller";
+import Wallet from "../../models/wallet.model";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -64,6 +69,7 @@ export const createBooking = async (req: Request, res: Response) => {
         timeZone: value.timeZone,
         endTime: addMinutesToTime(value.startTime, value.duration),
       });
+      console.log(value.startTime);
       console.log(bookingObj);
       const getCommission: any = await Commission.findOne({
         type: "FIXED",
@@ -419,21 +425,58 @@ export const refundAmountForMeeting = async (meetingId: Types.ObjectId) => {
         booking.totalAmount,
         "CREDIT",
         booking?.user,
-        superAdminId
+        superAdminId,
+        "refund"
       );
     }
   } catch (error: any) {
     return error.message;
   }
 };
+
+export const ifCancelByExpertThanFirstChargeThanRefund = async (
+  res: Response,
+  bookingId: Types.ObjectId
+) => {
+  try {
+    const superAdminId = await getSuperAdminId();
+    const booking: any = await Booking.findById(bookingId);
+    const ExpertWallet: any = await Wallet.findOne({ user: booking.expert });
+
+    if (ExpertWallet.amount <= 25) {
+      return res.status(201).json({
+        success: false,
+        status: 201,
+        message: "you need to have $25 in your wallet to cancel the meeting",
+      });
+    } else {
+      var trans = await createTransaction(
+        25,
+        "DEBIT",
+        booking.expert,
+        superAdminId,
+        "Cancellation charge"
+      );
+    }
+    return trans;
+  } catch (error: any) {
+    return error.message;
+  }
+};
 export const cancelBooking = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
+  const { role } = req.query;
+  const superAdminId = await getSuperAdminId();
   try {
+    if (role === "EXPERT") {
+      await ifCancelByExpertThanFirstChargeThanRefund(res, ObjectId(bookingId));
+    }
     const booking: any = await Booking.findOneAndUpdate(
       ObjectId(bookingId),
       { status: "CANCELLED" },
       { new: true }
     );
+
     await createNotification(
       ObjectId(booking.user),
       ObjectId(booking.expert),
@@ -443,6 +486,20 @@ export const cancelBooking = async (req: Request, res: Response) => {
       NoticationMessage.CancelBooking.message,
       { targetId: booking._id }
     );
+    if (role === "USER") {
+      await getRefundAmountFromBooking(booking._id);
+    }
+    if (role === "EXPERT") {
+      // + 50 is for store creedit
+      await createTransaction(
+        booking.totalAmount + 50,
+        "CREDIT",
+        booking.user,
+        superAdminId,
+        "Refund for cancellation by expert"
+      );
+    }
+    // await createNewRefundRequest(ObjectId(bookingId),50 );
     return res.status(200).json({
       status: 200,
       success: true,

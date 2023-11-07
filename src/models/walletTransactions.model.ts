@@ -5,6 +5,7 @@ export interface WalletTransactionData {
   type: "CREDIT" | "DEBIT";
   status: 'pending' | 'success' | 'failed';
   user: Types.ObjectId;
+  title:string;
   otherUser: Types.ObjectId;
   isDeleted?: boolean;
 }
@@ -37,6 +38,9 @@ const walletTransactionSchema: Schema<WalletTransactionDocument> =
         type: String,
         enum:['pending', 'success', 'failed'],
         default:'success'
+      },
+      title:{
+        type:String,
       },
       isDeleted: {
         type: Boolean,

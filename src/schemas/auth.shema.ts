@@ -5,6 +5,7 @@ interface signUpDto {
   firstName: string;
   lastName: string;
   password: string;
+  referBy: string;
   countryCode: string;
   email: string;
   role: string;
@@ -22,6 +23,7 @@ const signupSchema: Joi.ObjectSchema<signUpDto> = Joi.object<signUpDto>().keys({
     Roles.ADMIN,
     Roles.EXPERT
   ),
+  referBy:Joi.string(),
   countryCode: Joi.string(),
   phone: Joi.number(),
   termAndConditions: Joi.bool().valid(true),

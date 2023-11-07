@@ -12,6 +12,7 @@ export interface BookingPaymentData {
   promoCode: Types.ObjectId;
   totalAmount: number;
   discountAmount: number;
+  paymentObj:object;
   CommissionAmount: number;
   grandTotal: Number;
   status: "PAID" | "UNPAID";
@@ -37,6 +38,9 @@ const bookingPaymentSchema: Schema<BookingPaymentDocument> =
       promoCode: {
         type: Schema.Types.ObjectId,
         ref: "PromoCode",
+      },
+      paymentObj:{
+        type:Object
       },
 
       CommissionAmount: {

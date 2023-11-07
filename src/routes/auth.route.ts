@@ -9,6 +9,7 @@ import {
   forgotPasswordVerifyOtp,
   forgotPasswordsendOtp,
   getUserDetail,
+  getUserProfileById,
   loginUser,
   permanentDeleteAccount,
   setNewPassword,
@@ -26,6 +27,7 @@ router.put("/user/delete/:userId", deleteAccount);
 router.delete("/user/permanent/delete/:userId", permanentDeleteAccount);
 router.get("/user/detail", isAuthenticated, getUserDetail);
 
+router.get("/user/profile/get/:userId", getUserProfileById)
 //save profile picture
 
 router.put(

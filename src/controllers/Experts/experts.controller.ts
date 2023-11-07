@@ -128,7 +128,17 @@ export const getAllExpertBasedOnSearch = async (
   res: Response
 ) => {
   try {
-    let { jobCategory, skills, search } = req.query;
+    let {
+      jobCategory,
+      skills,
+      search,
+      startPrice,
+      endPrice,
+      minExperience,
+      maxExperience,
+      rating,
+      typeOfExpert,
+    } = req.query;
     console.log(jobCategory);
     let expertise: any = skills
       ?.toString()
@@ -136,6 +146,11 @@ export const getAllExpertBasedOnSearch = async (
       .map((item: string) => item.trim());
 
     const pipeline = [];
+    var typeLength;
+    if (typeOfExpert) {
+      typeOfExpert = typeOfExpert.toString().split(",");
+      typeLength = typeOfExpert.length;
+    }
 
     if (jobCategory) {
       pipeline.push({
@@ -143,6 +158,22 @@ export const getAllExpertBasedOnSearch = async (
           jobCategory: ObjectId(jobCategory.toString()),
         },
       });
+    }
+    if (typeOfExpert && typeLength === 1) {
+      if (typeOfExpert[0] === "AGENCY") {
+        pipeline.push({
+          $match: {
+            agency: { $exists: true },
+          },
+        });
+      }
+      if (typeOfExpert[0] === "EXPERT") {
+        pipeline.push({
+          $match: {
+            agency: { $exists: false },
+          },
+        });
+      }
     }
 
     if (skills && expertise?.length > 0) {
@@ -152,6 +183,27 @@ export const getAllExpertBasedOnSearch = async (
         },
       });
     }
+    if (startPrice && endPrice) {
+      pipeline.push({
+        $match: {
+          price: {
+            $gte: parseInt(startPrice.toString()),
+            $lte: parseInt(endPrice.toString()),
+          },
+        },
+      });
+    }
+    if (minExperience && maxExperience) {
+      pipeline.push({
+        $match: {
+          experience: {
+            $gte: parseInt(minExperience.toString()),
+            $lte: parseInt(maxExperience.toString()),
+          },
+        },
+      });
+    }
+    
 
     pipeline.push({
       $lookup: {
@@ -224,10 +276,18 @@ export const getAllExpertBasedOnSearch = async (
         };
       })
     );
+    let finalList;
+    if (rating) {
+      finalList = await Promise.all(
+        list.filter((exprt) => {
+          return parseInt(exprt.rating.toString()) >= parseInt(`${rating}`);
+        })
+      );
+    }
     return res.status(200).json({
       success: true,
       status: 200,
-      data: list,
+      data: rating ? finalList : list,
       message: "Experts are listed according to your interest",
     });
   } catch (error: any) {
@@ -243,7 +303,7 @@ export const getAllExpertBasedOnSearch = async (
 export const updateExpert = async (req: Request, res: Response) => {
   const data = req.body;
   const { userId } = req.params;
-  console.log(data)
+  console.log(data);
   try {
     const exp: any = await Expert.findOne({
       user: ObjectId(userId.toString()),

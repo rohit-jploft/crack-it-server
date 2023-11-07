@@ -60,6 +60,7 @@ export const createNewUser = async (req: Request, res: Response) => {
         phone: value.phone,
         role: value.role ? value.role : Roles.USER,
         password: hashedPassword,
+        referBy: value.referBy ? value.referBy : null,
         countryCode: value.countryCode,
         termAndConditions: true,
       });
@@ -306,7 +307,34 @@ export const getUserDetail = async (req: Request, res: Response) => {
     });
   }
 };
-
+export const getUserProfileById = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const userData = await Expert.findOne({ user: ObjectId(userId) }).populate(
+      "user jobCategory"
+    );
+    if (!userData) {
+      return res.status(200).json({
+        success: false,
+        type: "error",
+        status: 406,
+        message: USER_NOT_FOUND_ERR,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: userData,
+      message: "Account details fetched successfully",
+    });
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
 export const changePassword = async (req: Request, res: Response) => {
   const { oldPassword, password } = req.body;
   // check validation error using JOI
@@ -366,7 +394,7 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
   const { mobile, countryCode } = req.body;
   try {
     const checkUser = await User.findOne({
-      phone: mobile,
+      $or:[{phone:mobile}],
       countryCode: countryCode,
     });
     if (!checkUser) {
@@ -465,7 +493,7 @@ export const setNewPassword = async (req: Request, res: Response) => {
 };
 
 export const setProfilePicOfUser = async (req: Request, res: Response) => {
-  const {userId} = req.params;
+  const { userId } = req.params;
   try {
     if (req?.files) {
       var { profilePic }: any = req?.files;
@@ -477,9 +505,9 @@ export const setProfilePicOfUser = async (req: Request, res: Response) => {
         });
       }
       var media = profilePic[0]?.path?.replaceAll("\\", "/") || "";
-      
+
       console.log(profilePic);
-      
+
       console.log(ObjectId(userId.toString()), "id");
 
       const user = await User.findOneAndUpdate(
@@ -487,10 +515,11 @@ export const setProfilePicOfUser = async (req: Request, res: Response) => {
         {
           profilePhoto: media,
         }
-        
       );
-      if(user && user.profilePhoto){
-        profilePic && existsSync(user.profilePhoto) && unlinkSync(user.profilePhoto)
+      if (user && user.profilePhoto) {
+        profilePic &&
+          existsSync(user.profilePhoto) &&
+          unlinkSync(user.profilePhoto);
       }
       return res.status(200).json({
         success: true,
