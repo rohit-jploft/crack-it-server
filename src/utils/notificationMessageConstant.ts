@@ -22,5 +22,9 @@ export const NoticationMessage = {
   withDrawalApproved:{
     title:"Withdrawal request",
     message:"Your withdrawal request is approved"
+  },
+  ratingByUser:{
+    title:"New Feedback",
+    message:"You have been rated by user"
   }
 };

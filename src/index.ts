@@ -28,6 +28,7 @@ import { sendNotification } from "./helper/notifications";
 import { NoticationMessage } from "./utils/notificationMessageConstant";
 import { getRefundAmountFromBooking } from "./controllers/Refund/refund.controller";
 import { checkAndVerifyPayment } from "./controllers/Payment/payment.controller";
+import { createConversation } from "./controllers/Chat/chat.controller";
 //dot env
 dotenv.config();
 
@@ -89,7 +90,6 @@ app.use("/", router);
 
 schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted)
 schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min)
-startChatForConfirmedBookingBefore15Min()
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {
@@ -195,7 +195,7 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
- 
+    // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
    
     console.log("database connected");
   } catch (error) {

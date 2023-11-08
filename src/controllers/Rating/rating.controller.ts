@@ -4,6 +4,9 @@ import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import ExpertRating from "../../models/expertRating.model";
 import expertRatingSchema from "../../schemas/rating.schema";
 import AgencyRating from "../../models/agencyRating.model";
+import { createNotification } from "../Notifications/Notification.controller";
+import { NotificationType } from "../../utils/NotificationType";
+import { NoticationMessage } from "../../utils/notificationMessageConstant";
 
 export const rateExpert = async (req: Request, res: Response) => {
   const data = req.body;
@@ -26,6 +29,15 @@ export const rateExpert = async (req: Request, res: Response) => {
       rate.rating = value.rating;
       rate.comment = value.comment ? value.comment : rate.comment;
       const updatedRating = await rate.save();
+
+      await createNotification(
+        value.ratedBy,
+        value.expert,
+        NoticationMessage.ratingByUser.title,
+        NotificationType.Rating,
+        "web",
+        NoticationMessage.ratingByUser.message
+      );
       return res.status(200).json({
         success: true,
         status: 200,

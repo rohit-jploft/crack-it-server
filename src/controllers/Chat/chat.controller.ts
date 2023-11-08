@@ -73,6 +73,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         { superAdmin: userId },
         { agency: userId },
       ],
+      isClosed:false
       
     })
       .populate("participants", "firstName lastName role")
@@ -339,8 +340,8 @@ export const getChatFromMeetingId = async (req: Request, res: Response) => {
     if (!chatWindow) {
       return res.status(208).json({
         success: false,
-        status: 404,
-        message: "no chat found",
+        status: 200,
+        message: "Chat not initiated yet",
       });
     }
     return res.status(200).json({

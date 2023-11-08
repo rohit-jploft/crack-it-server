@@ -29,49 +29,27 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     payment_method_types: ["card"],
     line_items: lineItems,
     mode: "payment",
-    success_url: "https://crack-it-website.netlify.app/Mybookings",
+    success_url: "https://crack-it-website.netlify.app/check-payment",
     cancel_url: "https://crack-it-website.netlify.app/wallet",
   });
   console.log(session, "session");
   // const check = stripe.paymentIntents.retrieve(session.id);
   // console.log(check, "checkPayment")
   if (session) {
-    const meeting: any = await Booking.findByIdAndUpdate(
-      meetingId,
-      {
-        status: "CONFIRMED",
-      },
-      { new: true }
-    );
-    let meetArr = [];
-    if (meeting && meeting.user) {
-      meetArr.push(meeting?.user);
-    }
-    if (meeting && meeting.expert) {
-      meetArr.push(meeting?.expert);
-    }
+    const meeting: any = await Booking.findById(ObjectId(meetingId));
 
     // await createConversation(meetArr, meetingId);
     const payment = await BookingPayment.findOneAndUpdate(
       { booking: ObjectId(meetingId) },
       {
-        status: "PAID",
+        // status: "PAID",
+        paymentObj: session,
       },
       { new: true }
     );
     console.log(meeting, payment);
-    await createNotification(
-      meeting.user,
-      meeting.expert,
-      NoticationMessage.ConfirmedBooking.title,
-      NotificationType.Booking,
-      "web",
-      NoticationMessage.ConfirmedBooking.message,
-      { targetId: meeting?._id },
-      {}
-    );
   }
-  return res.status(200).json({ id: session.id });
+  return res.status(200).json({ id: session.id, bookingId: meetingId });
 };
 export const checkAndVerifyPayment = async (req: Request, res: Response) => {
   const { type, id, bookingId } = req.body;
@@ -80,10 +58,43 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
       type === "session"
         ? await stripe.checkout.sessions.retrieve(id)
         : await stripe.paymentIntents.retrieve(id);
-        console.log(checkIntent)
+    console.log(checkIntent);
     if (checkIntent.status === "succeeded") {
-      const booking:any = await Booking.findById(ObjectId(bookingId.toString()));
-      var payment:any = await BookingPayment.findOne({booking:ObjectId(bookingId.toString())});
+      const booking: any = await Booking.findById(
+        ObjectId(bookingId.toString())
+      );
+      var payment: any = await BookingPayment.findOne({
+        booking: ObjectId(bookingId.toString()),
+      });
+
+      booking.status = "CONFIRMED";
+      payment.status = "PAID";
+      payment.paymentObj = checkIntent;
+      await booking.save();
+      await payment.save();
+      await createNotification(
+        booking.user,
+        booking.expert,
+        NoticationMessage.ConfirmedBooking.title,
+        NotificationType.Booking,
+        "web",
+        NoticationMessage.ConfirmedBooking.message,
+        { targetId: booking?._id },
+        {}
+      );
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: payment,
+      });
+    }
+    if (checkIntent.status === "complete") {
+      const booking: any = await Booking.findById(
+        ObjectId(bookingId.toString())
+      );
+      var payment: any = await BookingPayment.findOne({
+        booking: ObjectId(bookingId.toString()),
+      });
 
       booking.status = "CONFIRMED";
       payment.status = "PAID";
@@ -91,16 +102,15 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
       await booking.save();
       await payment.save();
       return res.status(200).json({
-        success:true,
-        status:200,
-        data:payment
-      })
-
+        success: true,
+        status: 200,
+        data: payment,
+      });
     }
     return res.status(207).json({
       success: false,
       status: 207,
-      message:"Payment failed"
+      message: "Payment failed",
       // data: checkIntent,
     });
   } catch (error: any) {

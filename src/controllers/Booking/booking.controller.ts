@@ -29,6 +29,7 @@ import {
   getRefundAmountFromBooking,
 } from "../Refund/refund.controller";
 import Wallet from "../../models/wallet.model";
+import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -88,6 +89,18 @@ export const createBooking = async (req: Request, res: Response) => {
         NoticationMessage.BookingRequest.message,
         { targetId: savedBooking._id }
       );
+      const agency = await getAgencyOfAnyExpert(ObjectId(value.expert));
+      if (agency && agency?.isAssociatedWithAgency) {
+        await createNotification(
+          ObjectId(value.user),
+          ObjectId(agency.agencyId),
+          NoticationMessage.BookingRequest.title,
+          NotificationType.Booking,
+          "web",
+          NoticationMessage.BookingRequest.message,
+          { targetId: savedBooking._id }
+        );
+      }
 
       let totalAmount = (value.duration / 60) * getPriceOfExpertPerHour?.price;
       const bookPaymentObj = new BookingPayment({

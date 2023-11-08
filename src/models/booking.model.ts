@@ -57,7 +57,7 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
       set: (v: any) => {
         const current = new Date();
         let date: any = current.getDate();
-        let month: any = current.getMonth();
+        let month: any = current.getMonth() + 1;
         if (date < 10) {
           date = "0" + date.toString();
         }
