@@ -23,7 +23,7 @@ export const AgencyProfileSetup = async (req: Request, res: Response) => {
 
     // Check validation error using JOI
     const { value, error } = AgencyExpertiseSchemaSchema.validate(data);
-    console.log(value, "values")
+    console.log(value, "values");
     // Return if any validation error
     if (error) {
       return res.status(403).json({
@@ -109,7 +109,7 @@ export const getAllAgencyExperts = async (req: Request, res: Response) => {
   const { agencyId } = req.params;
   try {
     const experts = await Expert.find({ agency: ObjectId(agencyId) })
-      .populate("user", "firstName lastName email phone role")
+      .populate("user", "firstName lastName email phone role profilePhoto")
       .populate("jobCategory", "title")
       .populate("agency", "agencyName")
       .populate("expertise", "title");
@@ -157,7 +157,7 @@ export const getAgencyProfile = async (req: Request, res: Response) => {
     })
       .populate(
         "agency",
-        "agencyName email phone countryCode isExpertProfileVerified"
+        "agencyName email phone countryCode isExpertProfileVerified profilePhoto"
       )
       .populate("expertise", "title")
       .populate("jobCategory", "title");
@@ -234,7 +234,7 @@ export const addNewAgencyExpert = async (req: Request, res: Response) => {
         email: value.email.toLowerCase(),
         phone: value.phone,
         role: Roles.EXPERT,
-        profilePhoto: media,
+        profilePhoto: value.profilePhoto,
         password: hashedPassword,
         countryCode: value.countryCode,
         termAndConditions: true,

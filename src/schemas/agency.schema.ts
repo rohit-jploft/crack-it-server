@@ -14,4 +14,5 @@ export const agencyExpertSchema = Joi.object({
   experience: Joi.number().required(),
   jobCategory: Joi.string().required(),
   expertise: Joi.array().items(Joi.string()),
+  profilePhoto:Joi.string()
 });

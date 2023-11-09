@@ -12,6 +12,7 @@ import {
   getUserProfileById,
   loginUser,
   permanentDeleteAccount,
+  setAvatarProfilePicture,
   setNewPassword,
   setProfilePicOfUser,
 } from "../controllers/Authentication/auth.controller";
@@ -27,13 +28,15 @@ router.put("/user/delete/:userId", deleteAccount);
 router.delete("/user/permanent/delete/:userId", permanentDeleteAccount);
 router.get("/user/detail", isAuthenticated, getUserDetail);
 
-router.get("/user/profile/get/:userId", getUserProfileById)
+router.get("/user/profile/get/:userId", getUserProfileById);
 //save profile picture
 
 router.put(
   "/user/set/profile/:userId",
-  upload.fields([{ name: "profilePic", maxCount: 1 }]), setProfilePicOfUser
+  upload.fields([{ name: "profilePic", maxCount: 1 }]),
+  setProfilePicOfUser
 );
+router.put("/user/set/avatar/:userId", setAvatarProfilePicture);
 
 // chnage password
 router.post("/user/change-password", isAuthenticated, changePassword);

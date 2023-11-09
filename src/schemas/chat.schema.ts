@@ -8,7 +8,7 @@ interface messageDto {
 }
 const messageJoiSchema: Joi.ObjectSchema<messageDto> = Joi.object<messageDto>({
   chat: Joi.string().required(), // You can use .objectId() if you have a custom Joi objectId validation
-  type:Joi.string().valid("file", "text"),
+  type:Joi.string(),
   sender: Joi.string().required(), // You can use .objectId() if you have a custom Joi objectId validation
   content: Joi.string().when("type", { is: "text", then: Joi.required() }).allow(""),
 

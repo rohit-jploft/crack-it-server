@@ -394,7 +394,7 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
   const { mobile, countryCode } = req.body;
   try {
     const checkUser = await User.findOne({
-      $or:[{phone:mobile}],
+      $or: [{ phone: mobile }],
       countryCode: countryCode,
     });
     if (!checkUser) {
@@ -528,6 +528,37 @@ export const setProfilePicOfUser = async (req: Request, res: Response) => {
         message: "Profile pic saved",
       });
     }
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const setAvatarProfilePicture = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { avatar } = req.body;
+  try {
+    const setUsersAvatar: any = await User.findById(ObjectId(userId));
+    if (!setUsersAvatar) {
+      return res.status(200).json({
+        status: 200,
+        success: false,
+        type: "error",
+        message: "user not found",
+      });
+    }
+    setUsersAvatar.profilePhoto = avatar;
+    await setUsersAvatar.save();
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: setUsersAvatar,
+      message: "Profile pic saved",
+    });
   } catch (error: any) {
     return res.status(403).json({
       success: false,

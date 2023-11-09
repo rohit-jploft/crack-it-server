@@ -76,7 +76,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
       isClosed:false
       
     })
-      .populate("participants", "firstName lastName role")
+      .populate("participants", "firstName lastName role profilePhoto")
       .populate("admin", "firstName lastName role")
       .populate("superAdmin", "firstName lastName role")
       .populate("agency", "agencyName role");
@@ -116,7 +116,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const message = await Message.create({
       chat: ObjectId(value.chat),
       sender: ObjectId(value.sender),
-      type: audio ? audio[0].mimetype : "text",
+      type: audio ? value.type : "text",
       content: value.content,
       media: audio ? media : "",
     });
