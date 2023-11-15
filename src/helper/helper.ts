@@ -83,3 +83,12 @@ export function combineTimestamps(dateTimestamp:Date, timeTimestamp:Date) {
 
   return combinedTimestamp;
 }
+
+/// time zone symbol and get the timeZone format
+export function getTheTimeZoneConvertedTime(dateTimeStamp:Date, timeZoneSymbol:string){
+     const getOffSetTime:any = timeZoneList.find(t => t.symbol === timeZoneSymbol);
+     console.log(getOffSetTime)
+     const convertTime = addMinutesToDate(dateTimeStamp, getOffSetTime?.offsetMinutes);
+     return convertTime;
+}
+
