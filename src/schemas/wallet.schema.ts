@@ -36,4 +36,10 @@ export const bankValidationSchema = Joi.object({
   isDeleted: Joi.boolean().default(false),
 });
 
+export const payWithWallet = Joi.object({
+  bookingId:Joi.string().required(),
+  amount:Joi.number().required(),
+  userId:Joi.string().required(),
+})
+
 export default withdrawalRequestSchema;

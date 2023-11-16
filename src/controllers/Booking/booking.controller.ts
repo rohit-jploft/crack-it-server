@@ -2,11 +2,12 @@ import { Response, Request } from "express";
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import { Types } from "mongoose";
 import bookingSchema from "../../schemas/booking.schema";
-import Booking from "../../models/booking.model";
+import Booking, { BookingDocument } from "../../models/booking.model";
 import {
   addMinutesToDate,
   addMinutesToTime,
   getDateInDateStamp,
+  getTheTimeZoneConvertedTime,
   getTimeInDateStamp,
 } from "../../helper/helper";
 import BookingPayment, {
@@ -58,7 +59,7 @@ export const createBooking = async (req: Request, res: Response) => {
     });
     console.log(checkIfalreadyBooked);
     if (!checkIfalreadyBooked) {
-      const bookingObj = new Booking({
+      const bookingObj:BookingDocument = new Booking({
         user: ObjectId(value.user),
         expert: ObjectId(value.expert),
         jobCategory: value.jobCategory,
@@ -78,6 +79,8 @@ export const createBooking = async (req: Request, res: Response) => {
       });
 
       totalCommission = getCommission?.amount;
+
+      // bookingObj.startTime = getTheTimeZoneConvertedTime(bookingObj.startTime.toString(), value.time);
 
       const savedBooking = await bookingObj.save();
       await createNotification(

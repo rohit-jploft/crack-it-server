@@ -73,8 +73,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         { superAdmin: userId },
         { agency: userId },
       ],
-      isClosed:false
-      
+      isClosed: false,
     })
       .populate("participants", "firstName lastName role profilePhoto")
       .populate("admin", "firstName lastName role")
@@ -102,7 +101,9 @@ export const sendMessage = async (req: Request, res: Response) => {
 
   if (req?.files) {
     var { audio }: any = req?.files;
-    var media = audio[0]?.path?.replaceAll("\\", "/") || "";
+    if (audio) {
+      var media = audio[0]?.path?.replaceAll("\\", "/") || "";
+    }
   }
 
   if (error) {
