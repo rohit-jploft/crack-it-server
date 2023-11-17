@@ -18,9 +18,9 @@ export const createConversation = async (
         admin: null,
         booking: bookingId,
       });
-      return createChat;
+      return { chat:createChat, isNew: true };
     } else {
-      return check;
+      return { chat:check, isNew: true };
     }
   } catch (error: any) {
     return error.message;

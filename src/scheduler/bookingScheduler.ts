@@ -10,12 +10,19 @@ export const makeStatusFromConfirmedToCompleted = async () => {
   try {
     const todaysDate = new Date();
     const getBooking = await Booking.updateMany(
-      { status: "CONFIRMED", date: { $lt: todaysDate } },
+      { status: "CONFIRMED", startTime: { $lt: todaysDate } },
       { status: "COMPLETED" }
+    );
+    const ReqBooking = await Booking.updateMany(
+      {
+        status: { $in: ["REQUESTED", "ACCEPTED"] },
+        endTime: { $lt: todaysDate },
+      },
+      { status: "CANCELLED" }
     );
     const booking = await Booking.find({
       status: "CONFIRMED",
-      date: { $lt: todaysDate },
+      startTime: { $lt: todaysDate },
     });
     for (let book of booking) {
       await Chat.findOneAndUpdate(
@@ -54,15 +61,27 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
         ],
         booking._id
       );
-      await createNotification(
-        ObjectId(booking.expert.toString()),
-        ObjectId(booking.user.toString()),
-        NoticationMessage.ChatInitiated.title,
-        NotificationType.Booking,
-        "web",
-        NoticationMessage.ChatInitiated.message,
-        { targetId: booking._id }
-      );
+      console.log(convo, "convo")
+      if (convo && convo.isNew) {
+        await createNotification(
+          ObjectId(booking.expert.toString()),
+          ObjectId(booking.user.toString()),
+          NoticationMessage.ChatInitiated.title,
+          NotificationType.Booking,
+          "web",
+          NoticationMessage.ChatInitiated.message,
+          { targetId: booking._id }
+        );
+        await createNotification(
+          ObjectId(booking.user.toString()),
+          ObjectId(booking.expert.toString()),
+          NoticationMessage.ChatInitiated.title,
+          NotificationType.Booking,
+          "web",
+          NoticationMessage.ChatInitiated.message,
+          { targetId: booking._id }
+        );
+      }
     }
   } catch (error) {
     return error;

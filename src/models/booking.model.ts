@@ -15,6 +15,7 @@ export interface BookingData {
   date: Date;
   duration: Number;
   expert: Types.ObjectId;
+  isClosed:boolean
   startTime: Date;
   timeZone: string;
   endTime: Date;
@@ -45,7 +46,10 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     jobDescription: {
       type: String,
     },
-
+    isClosed:{
+      type:Boolean,
+      default:false
+    },
     jobCategory: {
       type: Schema.Types.ObjectId,
       ref: "Category",

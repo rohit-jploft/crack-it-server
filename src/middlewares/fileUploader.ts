@@ -25,6 +25,9 @@ const storage = multer.diskStorage({
     if (fileType.includes("+")) {
       fileType = fileType.split("+")[0];
     }
+    if(fileType === "m4a"){
+      cb(null, file.fieldname + "-" + Date.now() + "." + 'mp3');
+    }
     cb(null, file.fieldname + "-" + Date.now() + "." + fileType);
   },
 });
@@ -44,7 +47,7 @@ function checkFileType(
 ) {
   // Allowed ext
   const filetypes =
-    /doc|docx|pdf|ppt|pptx|xls|xlsx|mp4|mov|jpeg|jpg|png|gif|svg|csv|swf|mp3|AVI|WMV|flv|ogg|webm|webp|wav/;
+    /doc|docx|pdf|ppt|pptx|xls|xlsx|mp4|mov|jpeg|jpg|png|gif|svg|csv|swf|mp3|AVI|WMV|flv|ogg|webm|webp|m4a|wav/;
   // Check ext
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 

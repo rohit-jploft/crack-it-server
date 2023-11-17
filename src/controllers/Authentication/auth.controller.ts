@@ -567,3 +567,5 @@ export const setAvatarProfilePicture = async (req: Request, res: Response) => {
     });
   }
 };
+
+// export const saveTimeZoneForUser = async 

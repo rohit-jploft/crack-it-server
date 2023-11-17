@@ -10,6 +10,7 @@ interface UserData {
   password: string;
   role?: string;
   profilePhoto?:string;
+  timeZone?:string;
   email: string;
   webDeviceToken: string;
   referBy:Types.ObjectId;
@@ -61,6 +62,9 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     },
     appDeviceToken:{
         type:String
+    },
+    timeZone:{
+      type:String,
     },
     email: {
       type: String,

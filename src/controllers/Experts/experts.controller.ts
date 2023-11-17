@@ -303,7 +303,7 @@ export const getAllExpertBasedOnSearch = async (
 export const updateExpert = async (req: Request, res: Response) => {
   const data = req.body;
   const { userId } = req.params;
-  console.log(data);
+  console.log(data, "update data");
   try {
     const exp: any = await Expert.findOne({
       user: ObjectId(userId.toString()),
@@ -318,7 +318,7 @@ export const updateExpert = async (req: Request, res: Response) => {
     }
     exp.description = data.description ? data.description : exp.description;
     exp.price = data.price ? data.price : exp.price;
-    exp.language = data.language ? data.language : exp.language;
+    exp.languages = data.language ? data.language : exp.languages;
     exp.expertise = data.expertise ? data.expertise : exp.expertise;
     exp.jobCategory = data.jobCategory ? data.jobCategory : exp.jobCategory;
     exp.experience = data?.experience ? data?.experience : exp.experience;
