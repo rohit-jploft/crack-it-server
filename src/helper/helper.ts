@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { timeZoneList } from "../utils/constant";
+import {timeZoneList} from "../utils/constant"
 
 export function removeDoubleSlashes(inputString: string): string {
   return inputString.replace(/\\/g, "/");
@@ -23,19 +23,19 @@ export function getTimeInDateStamp(time: string): string {
     month = "0" + month.toString();
   }
   console.log(`${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`);
-  return `${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`;
+  return `${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`
 }
 export function getDateInDateStamp(date: string): Date {
   // date -- YYYY-MM-DD in string type
-  console.log(date, "date");
+  console.log(date, "date")
   return new Date(date);
 }
 
 export function addMinutesToDate(date: Date, minutesToAdd: number): Date {
   return new Date(date.getTime() + minutesToAdd * 60000);
 }
-export function addMinutesToTime(timeString: string, minutesToAdd: number) {
-  const [hours, minutes, seconds] = timeString.split(":").map(Number);
+export function addMinutesToTime(timeString:string, minutesToAdd:number) {
+  const [hours, minutes, seconds] = timeString.split(':').map(Number);
 
   if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
     const totalMinutes = hours * 60 + minutes + minutesToAdd;
@@ -43,26 +43,27 @@ export function addMinutesToTime(timeString: string, minutesToAdd: number) {
     const newMinutes = totalMinutes % 60;
 
     // Format the new time components with leading zeros
-    const formattedHours = String(newHours).padStart(2, "0");
-    const formattedMinutes = String(newMinutes).padStart(2, "0");
-    const formattedSeconds = String(seconds).padStart(2, "0");
+    const formattedHours = String(newHours).padStart(2, '0');
+    const formattedMinutes = String(newMinutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
 
     return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
   } else {
-    return null; // Invalid time format
+    return ""; // Invalid time format
   }
 }
-export async function getHoursBefore(startTime: Date) {
-  console.log(startTime, "starttime");
+export async function getHoursBefore(startTime:Date) {
+  console.log(startTime, "starttime")
   const currentTime = new Date();
-  let bookStartTime = new Date(startTime);
+  let bookStartTime = new Date(startTime)
   const timeDifference = bookStartTime.getTime() - currentTime.getTime();
   const hoursBefore = timeDifference / (1000 * 60 * 60); // Milliseconds to hours
-  console.log(hoursBefore, "hello");
+  console.log(hoursBefore, "hello")
   return hoursBefore;
 }
 
-export function combineTimestamps(dateTimestamp: Date, timeTimestamp: Date) {
+
+export function combineTimestamps(dateTimestamp:Date, timeTimestamp:Date) {
   // Create Date objects from the provided timestamps
   const dateObj = new Date(dateTimestamp.toString());
   const timeObj = new Date(timeTimestamp.toString());
@@ -79,30 +80,41 @@ export function combineTimestamps(dateTimestamp: Date, timeTimestamp: Date) {
   const milliseconds = timeObj.getMilliseconds();
 
   // Create a new Date object with the combined date and time components
-  const combinedTimestamp = new Date(
-    year,
-    month,
-    day,
-    hours,
-    minutes,
-    seconds,
-    milliseconds
-  );
+  const combinedTimestamp = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
   return combinedTimestamp;
 }
 
+
+
 /// time zone symbol and get the timeZone format
-export function getTheTimeZoneConvertedTime(
-  dateTimeStamp: string,
-  timeZoneSymbol: string
-) {
-  const getOffSetTime: any = timeZoneList.find(
-    (t) => t.symbol === timeZoneSymbol
-  );
-  const convertTime = addMinutesToDate(
-    new Date(dateTimeStamp),
-    getOffSetTime?.offsetMinutes
-  );
-  return new Date(convertTime);
+export function getTheTimeZoneConvertedTime(dateTimeStamp:Date, timeZoneSymbol:string, isUtcToOther:boolean){
+     const getOffSetTime:any = timeZoneList.find(t => t.symbol === timeZoneSymbol);
+     console.log(getOffSetTime)
+     if(isUtcToOther){
+      const convertTime = addMinutesToDate(dateTimeStamp, getOffSetTime?.offsetMinutes);
+     return convertTime;
+     } else {
+      const convertTime = addMinutesToDate(dateTimeStamp, -getOffSetTime?.offsetMinutes);
+      return convertTime;
+     }
+}
+
+export function getTheFinalStartTimeConvertedInDesiredTimeZone(date:Date, time:string, timeZone:string, ){
+  //date ------ ("year-month-date") e.g 2023-10-10
+  // time ------------ ("hours:mins:sec") e.g 11:32:00
+  const [hours, mins, secs] = time.split(':').map(Number);
+  // const [year, month, dateNum] = date.split('-').map(Number);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const dateNum = date.getDate();
+  console.log("year - ", year)
+  console.log("month - ", month)
+  console.log("dateNum - ", dateNum)
+  const combinedTimeAndDate = new Date(year, month, dateNum, hours, mins,secs, 0);
+
+  // const convertedTime = getTheTimeZoneConvertedTime(combinedTimeAndDate, timeZone, false);
+
+  return combinedTimeAndDate;
+
 }
