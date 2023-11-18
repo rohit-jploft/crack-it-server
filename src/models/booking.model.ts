@@ -15,7 +15,6 @@ export interface BookingData {
   date: Date;
   duration: Number;
   expert: Types.ObjectId;
-  isClosed:boolean
   startTime: Date;
   timeZone: string;
   endTime: Date;
@@ -46,57 +45,54 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     jobDescription: {
       type: String,
     },
-    isClosed:{
-      type:Boolean,
-      default:false
-    },
+
     jobCategory: {
       type: Schema.Types.ObjectId,
       ref: "Category",
     },
     startTime: {
       type: Date,
-      default: null,
-      // get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
-      set: (v: any) => {
-        const current = new Date();
-        let date: any = current.getDate();
-        let month: any = current.getMonth() + 1;
-        if (date < 10) {
-          date = "0" + date.toString();
-        }
-        if (month < 10) {
-          month = "0" + month.toString();
-        }
-        console.log(
-          "startTime",
+      // default: null,
+      // // get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
+      // set: (v: any) => {
+      //   const current = new Date();
+      //   let date: any = current.getDate();
+      //   let month: any = current.getMonth() + 1;
+      //   if (date < 10) {
+      //     date = "0" + date.toString();
+      //   }
+      //   if (month < 10) {
+      //     month = "0" + month.toString();
+      //   }
+      //   console.log(
+      //     "startTime",
 
-          `${current.getFullYear()}-${month}-${date}T${v}.000Z`
-        );
-        return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
-      },
+      //     `${current.getFullYear()}-${month}-${date}T${v}.000Z`
+      //   );
+      //   return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
+      // },
     },
     endTime: {
       type: Date,
-      default: null,
+      // default: null,
       // get: (v: any) => v?.toLocaleTimeString([], { hour12: false }),
-      set: (v: any) => {
-        const current = new Date();
-        let date: any = current.getDate() ;
-        let month: any = current.getMonth() + 1;
-        if (date < 10) {
-          date = "0" + date.toString();
-        }
-        if (month < 10) {
-          month = "0" + month.toString();
-        }
-        console.log(
-          "startTime",
+      // set: (v: any) => {
+      //   const current = new Date();
+      //   let date: any = current.getDate() ;
+      //   let month: any = current.getMonth() + 1;
+      //   if (date < 10) {
+      //     date = "0" + date.toString();
+      //   }
+      //   if (month < 10) {
+      //     month = "0" + month.toString();
+      //   }
+      //   console.log(
+      //     "startTime",
 
-          `${current.getFullYear()}-${month}-${date}T${v}.000Z`
-        );
-        return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
-      },
+      //     `${current.getFullYear()}-${month}-${date}T${v}.000Z`
+      //   );
+      //   return new Date(`${current.getFullYear()}-${month}-${date}T${v}.000Z`);
+      // },
     },
     status: {
       type: String,
