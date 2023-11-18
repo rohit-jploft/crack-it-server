@@ -1,12 +1,14 @@
 import { Response, Request } from "express";
 import { ObjectId, buildResult } from "../../helper/RequestHelper";
 import { Types } from "mongoose";
+
 import bookingSchema from "../../schemas/booking.schema";
-import Booking, { BookingDocument } from "../../models/booking.model";
+import Booking from "../../models/booking.model";
 import {
   addMinutesToDate,
   addMinutesToTime,
   getDateInDateStamp,
+  getTheFinalStartTimeConvertedInDesiredTimeZone,
   getTheTimeZoneConvertedTime,
   getTimeInDateStamp,
 } from "../../helper/helper";
@@ -43,6 +45,7 @@ export const createBooking = async (req: Request, res: Response) => {
       message: error.message,
     });
   }
+  // console.log(value, "vz")
   let totalCommission = 0;
   try {
     // get price of an expert per hour
@@ -51,27 +54,31 @@ export const createBooking = async (req: Request, res: Response) => {
     }).select("price");
     // Save the booking details
     // console.log(getTimeInDateStamp("12:10:00"), "startTime");
+    const finalDate = getTheTimeZoneConvertedTime(value.date, value.timeZone, true)
+    console.log(finalDate, "finalDate")
+
     const checkIfalreadyBooked = await Booking.findOne({
       expert: ObjectId(value.expert),
-      date: value.date,
-      startTime: value.startTime,
+      date:getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
+      startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
       status: { $in: ["ACCEPTED", "REQUESTED"] },
     });
-    console.log(checkIfalreadyBooked);
+    const finalEndTime = addMinutesToTime(value.startTime, value.duration);
+    console.log(checkIfalreadyBooked, "checkIfalreadyBooked");
     if (!checkIfalreadyBooked) {
-      const bookingObj:BookingDocument = new Booking({
+      const bookingObj = new Booking({
         user: ObjectId(value.user),
         expert: ObjectId(value.expert),
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
-        startTime: value.startTime,
-        date: value.date,
+        startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
+        date:  getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
         skills: value.skills ? value.skills : [],
         duration: value.duration,
         timeZone: value.timeZone,
-        endTime: addMinutesToTime(value.startTime, value.duration),
+        endTime:  getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, finalEndTime, value.timeZone),
       });
-      console.log(value.startTime);
+      // console.log(value.startTime);
       console.log(bookingObj);
       const getCommission: any = await Commission.findOne({
         type: "FIXED",
@@ -79,8 +86,6 @@ export const createBooking = async (req: Request, res: Response) => {
       });
 
       totalCommission = getCommission?.amount;
-
-      // bookingObj.startTime = getTheTimeZoneConvertedTime(bookingObj.startTime.toString(), value.time);
 
       const savedBooking = await bookingObj.save();
       await createNotification(
