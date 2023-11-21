@@ -113,8 +113,8 @@ export function getTheFinalStartTimeConvertedInDesiredTimeZone(date:Date, time:s
   console.log("dateNum - ", dateNum)
   const combinedTimeAndDate = new Date(year, month, dateNum, hours, mins,secs, 0);
 
-  // const convertedTime = getTheTimeZoneConvertedTime(combinedTimeAndDate, timeZone, false);
+  const convertedTime = getTheTimeZoneConvertedTime(combinedTimeAndDate, timeZone, false);
 
-  return combinedTimeAndDate;
+  return convertedTime;
 
 }

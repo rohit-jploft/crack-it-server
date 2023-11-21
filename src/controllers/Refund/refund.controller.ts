@@ -48,9 +48,9 @@ export const getRefundAmountFromBooking = async (bookingId: Types.ObjectId) => {
   try {
     const booking: any = await Booking.findById(bookingId);
     const payment: any = await BookingPayment.findOne({ booking: bookingId });
-    const combineDate = combineTimestamps(booking.date, booking.startTime);
+    // const combineDate = combineTimestamps(booking.date, booking.startTime);
 
-    const getHourBefore = await getHoursBefore(combineDate);
+    const getHourBefore = await getHoursBefore(booking.startTime);
 
     const getPercentage = await getTheRefundPercentage(getHourBefore);
     const expertrefundAmount =

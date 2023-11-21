@@ -4,6 +4,7 @@ interface NotificationData extends Document {
   sender: Schema.Types.ObjectId;
   receiver: Schema.Types.ObjectId;
   title: string;
+  type:string;
   message: string;
   data: Object;
   dynamicData: object;
@@ -20,6 +21,9 @@ const notificationSchema = new Schema<NotificationData>(
     receiver: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+    },
+    type:{
+      type:String
     },
    
     title: String,

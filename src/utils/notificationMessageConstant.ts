@@ -26,5 +26,9 @@ export const NoticationMessage = {
   ratingByUser:{
     title:"New Feedback",
     message:"You have been rated by user"
+  },
+  newMessage:{
+    title:"New Message",
+    message:"You have a recieved new message"
   }
 };

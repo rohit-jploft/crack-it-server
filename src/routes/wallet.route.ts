@@ -1,7 +1,7 @@
 import express, { Router } from "express";
 
 import { isAuthenticated } from "../middlewares/checkAuth";
-import { createWithdrawRequest, getAllWithdrawalReq, getUserWallet, getUsersTransaction, updateWithDrawalReq } from "../controllers/Wallet/wallet.controller";
+import { createWithdrawRequest, getAllWithdrawalReq, getUserWallet, getUsersTransaction, payWithWallet, updateWithDrawalReq } from "../controllers/Wallet/wallet.controller";
 
 const router: Router = express.Router();
 
@@ -14,5 +14,8 @@ router.post("/withdrawal/request/create", createWithdrawRequest);
 router.get("/withdrawal/get/all", getAllWithdrawalReq);
 // status update
 router.put("/withdrawal/update/status/:id", updateWithDrawalReq);
+
+// wallet payment api
+router.put("/payment/app", payWithWallet)
 
 export default router;

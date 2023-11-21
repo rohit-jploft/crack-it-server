@@ -7,6 +7,7 @@ import AgencyRating from "../../models/agencyRating.model";
 import { createNotification } from "../Notifications/Notification.controller";
 import { NotificationType } from "../../utils/NotificationType";
 import { NoticationMessage } from "../../utils/notificationMessageConstant";
+import Booking from "../../models/booking.model";
 
 export const rateExpert = async (req: Request, res: Response) => {
   const data = req.body;
@@ -29,6 +30,11 @@ export const rateExpert = async (req: Request, res: Response) => {
       rate.rating = value.rating;
       rate.comment = value.comment ? value.comment : rate.comment;
       const updatedRating = await rate.save();
+
+      const updateratedOrNot = await Booking.findByIdAndUpdate(
+        ObjectId(value.bookingId.toString()),
+        { isExpertRated: true }
+      );
 
       await createNotification(
         value.ratedBy,

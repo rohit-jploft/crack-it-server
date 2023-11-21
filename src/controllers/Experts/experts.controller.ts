@@ -218,6 +218,7 @@ export const getAllExpertBasedOnSearch = async (
               lastName: 1,
               phone: 1,
               countryCode: 1,
+              profilePhoto:1,
               email: 1,
             },
           },

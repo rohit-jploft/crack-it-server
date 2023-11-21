@@ -5,6 +5,9 @@ import { messageJoiSchema } from "../../schemas/chat.schema";
 import Message from "../../models/message.model";
 import Booking from "../../models/booking.model";
 import { Types } from "mongoose";
+import { createNotification } from "../Notifications/Notification.controller";
+import { NotificationType } from "../../utils/NotificationType";
+import { NoticationMessage } from "../../utils/notificationMessageConstant";
 
 export const createConversation = async (
   users: Types.ObjectId[],
@@ -18,9 +21,9 @@ export const createConversation = async (
         admin: null,
         booking: bookingId,
       });
-      return { chat:createChat, isNew: true };
+      return { chat: createChat, isNew: true };
     } else {
-      return { chat:check, isNew: true };
+      return { chat: check, isNew: true };
     }
   } catch (error: any) {
     return error.message;
@@ -79,10 +82,24 @@ export const getUsersConversation = async (req: Request, res: Response) => {
       .populate("admin", "firstName lastName role")
       .populate("superAdmin", "firstName lastName role")
       .populate("agency", "agencyName role");
+    const finalList = await Promise.all(
+      chatConvo.map(async (chat: any) => {
+        // const rating = await getExpertRating(expert.user._id.toString());
+        const msg = await Message.findOne(
+          { chat: chat._id },
+          { sort: { createdAt: -1 } }
+        ).select("content type createdAt");
+        console.log(msg);
+        return {
+          ...chat._doc,
+          latestMessage: msg,
+        };
+      })
+    );
     return res.status(200).json({
       success: true,
       status: 200,
-      data: chatConvo,
+      data: finalList,
       message: "Users chat conversation fetched",
     });
   } catch (error: any) {
@@ -121,6 +138,23 @@ export const sendMessage = async (req: Request, res: Response) => {
       content: value.content,
       media: audio ? media : "",
     });
+    const chatObj = await Chat.findById(ObjectId(value.chat));
+    if (chatObj && chatObj.participants) {
+      for (let cha of chatObj?.participants) {
+        if (value.sender !== cha.toString()) {
+          await createNotification(
+            ObjectId(value.sender),
+            ObjectId(cha.toString()),
+            NoticationMessage.newMessage.title,
+            NotificationType.Chat,
+            "web",
+            NoticationMessage.newMessage.message,
+            { targetId: value.chat }
+          );
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       status: 200,

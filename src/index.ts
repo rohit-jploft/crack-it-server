@@ -36,6 +36,7 @@ import { getRefundAmountFromBooking } from "./controllers/Refund/refund.controll
 import { checkAndVerifyPayment } from "./controllers/Payment/payment.controller";
 import { createConversation } from "./controllers/Chat/chat.controller";
 import User from "./models/user.model";
+import Booking from "./models/booking.model";
 //dot env
 dotenv.config();
 
@@ -205,7 +206,6 @@ async function connectDb() {
     // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
 
     console.log("database connected");
-
   } catch (error) {
     console.log(error);
     process.exit(1);

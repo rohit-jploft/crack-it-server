@@ -33,6 +33,7 @@ import {
 } from "../Refund/refund.controller";
 import Wallet from "../../models/wallet.model";
 import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
+import Category from "../../models/category.model";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -54,13 +55,25 @@ export const createBooking = async (req: Request, res: Response) => {
     }).select("price");
     // Save the booking details
     // console.log(getTimeInDateStamp("12:10:00"), "startTime");
-    const finalDate = getTheTimeZoneConvertedTime(value.date, value.timeZone, true)
-    console.log(finalDate, "finalDate")
+    const finalDate = getTheTimeZoneConvertedTime(
+      value.date,
+      value.timeZone,
+      true
+    );
+    console.log(finalDate, "finalDate");
 
     const checkIfalreadyBooked = await Booking.findOne({
       expert: ObjectId(value.expert),
-      date:getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
-      startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
+      date: getTheFinalStartTimeConvertedInDesiredTimeZone(
+        finalDate,
+        value.startTime,
+        value.timeZone
+      ),
+      startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(
+        finalDate,
+        value.startTime,
+        value.timeZone
+      ),
       status: { $in: ["ACCEPTED", "REQUESTED"] },
     });
     const finalEndTime = addMinutesToTime(value.startTime, value.duration);
@@ -71,12 +84,24 @@ export const createBooking = async (req: Request, res: Response) => {
         expert: ObjectId(value.expert),
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
-        startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
-        date:  getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, value.startTime, value.timeZone),
+        startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(
+          finalDate,
+          value.startTime,
+          value.timeZone
+        ),
+        date: getTheFinalStartTimeConvertedInDesiredTimeZone(
+          finalDate,
+          value.startTime,
+          value.timeZone
+        ),
         skills: value.skills ? value.skills : [],
         duration: value.duration,
         timeZone: value.timeZone,
-        endTime:  getTheFinalStartTimeConvertedInDesiredTimeZone(finalDate, finalEndTime, value.timeZone),
+        endTime: getTheFinalStartTimeConvertedInDesiredTimeZone(
+          finalDate,
+          finalEndTime,
+          value.timeZone
+        ),
       });
       // console.log(value.startTime);
       console.log(bookingObj);
@@ -318,12 +343,23 @@ export const getAllBooking = async (req: Request, res: Response) => {
           localField: "expert",
           foreignField: "user",
           as: "expertData",
+          // pipeline:[{
+
+          // }]
         },
       },
       {
         $unwind: {
           path: "$expertData",
-          preserveNullAndEmptyArrays: true,
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "expertData.expertise",
+          foreignField: "_id",
+          as: "expertise",
         },
       },
       {
@@ -465,11 +501,9 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
     const ExpertWallet: any = await Wallet.findOne({ user: booking.expert });
 
     if (ExpertWallet.amount <= 25) {
-      return res.status(201).json({
-        success: false,
-        status: 201,
-        message: "you need to have $25 in your wallet to cancel the meeting",
-      });
+      return {
+        isLow: false,
+      };
     } else {
       var trans = await createTransaction(
         25,
@@ -478,8 +512,8 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
         superAdminId,
         "Cancellation charge"
       );
+      return trans;
     }
-    return trans;
   } catch (error: any) {
     return error.message;
   }
@@ -489,28 +523,12 @@ export const cancelBooking = async (req: Request, res: Response) => {
   const { role } = req.query;
   const superAdminId = await getSuperAdminId();
   try {
-    if (role === "EXPERT") {
-      await ifCancelByExpertThanFirstChargeThanRefund(res, ObjectId(bookingId));
-    }
-    const booking: any = await Booking.findOneAndUpdate(
-      ObjectId(bookingId),
-      { status: "CANCELLED" },
-      { new: true }
-    );
+    const booking: any = await Booking.findById(ObjectId(bookingId));
 
-    await createNotification(
-      ObjectId(booking.user),
-      ObjectId(booking.expert),
-      NoticationMessage.CancelBooking.title,
-      NotificationType.Booking,
-      "web",
-      NoticationMessage.CancelBooking.message,
-      { targetId: booking._id }
-    );
-    if (role === "USER") {
+    if (role === "USER" && booking.status === "CONFIRMED") {
       await getRefundAmountFromBooking(booking._id);
     }
-    if (role === "EXPERT") {
+    if (role === "EXPERT" && booking.status === "CONFIRMED") {
       // + 50 is for store creedit
       await createTransaction(
         booking.totalAmount + 50,
@@ -520,7 +538,31 @@ export const cancelBooking = async (req: Request, res: Response) => {
         "Refund for cancellation by expert"
       );
     }
+    if (role === "EXPERT" && booking.status === "CONFIRMED") {
+      const check: any = await ifCancelByExpertThanFirstChargeThanRefund(
+        res,
+        ObjectId(bookingId)
+      );
+      if (check && !check?.isLow) {
+        return res.status(201).json({
+          status: 201,
+          success: false,
+          message: "you need to have $25 to cancel the meeting",
+        });
+      }
+    }
     // await createNewRefundRequest(ObjectId(bookingId),50 );
+    booking.status = "CANCELLED";
+    await createNotification(
+      ObjectId(booking.user),
+      ObjectId(booking.expert),
+      NoticationMessage.CancelBooking.title,
+      NotificationType.Booking,
+      "web",
+      NoticationMessage.CancelBooking.message,
+      { targetId: booking._id }
+    );
+    await booking.save();
     return res.status(200).json({
       status: 200,
       success: true,
@@ -682,14 +724,21 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
       .populate({
         path: "booking",
         populate: {
-          path: "expert user",
+          path: "expert user jobCategory skills",
           select: "-password",
         },
       });
+    console.log(payment);
     const expert = await Expert.findOne({
       user: ObjectId(payment?.booking?.expert?._id.toString()),
     }).populate("jobCategory");
+    const newSkills = [];
+    // for (let ele in payment?.booking?.skills) {
+    //    if(ele && ele?.parent){
+    //     const parent = await Category.findOne({_id:ObjectId(ele?.parent.toString())})
+    //    }
 
+    // }
     finalRes = {
       booking: payment,
       expertProfile: expert,

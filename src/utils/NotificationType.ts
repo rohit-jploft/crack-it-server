@@ -1,7 +1,8 @@
 enum NotificationType {
   Booking = "BOOKING",
   Withdrawal = "WITHDRAWAL",
-  Rating = "RATING"
+  Rating = "RATING",
+  Chat = "CHAT"
 }
 
 export { NotificationType };

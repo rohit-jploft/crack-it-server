@@ -13,6 +13,7 @@ export interface BookingData {
   jobCategory: Types.ObjectId;
   jobDescription: string;
   date: Date;
+  isExpertRated:boolean;
   duration: Number;
   expert: Types.ObjectId;
   startTime: Date;
@@ -45,7 +46,10 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     jobDescription: {
       type: String,
     },
-
+    isExpertRated:{
+      type:Boolean,
+      default:false
+    },
     jobCategory: {
       type: Schema.Types.ObjectId,
       ref: "Category",

@@ -11,6 +11,9 @@ import User from "../../models/user.model";
 import { createNotification } from "../Notifications/Notification.controller";
 import { NotificationType } from "../../utils/NotificationType";
 import { NoticationMessage } from "../../utils/notificationMessageConstant";
+import Booking from "../../models/booking.model";
+import BookingPayment from "../../models/bookingPayment.model";
+import { getSuperAdminId } from "../../helper/impFunctions";
 
 export const createWallet = async (userId: string) => {
   try {
@@ -32,7 +35,7 @@ export const createTransaction = async (
   type: "CREDIT" | "DEBIT",
   user: Types.ObjectId,
   otherUser: Types.ObjectId,
-  title:string
+  title: string
 ) => {
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
@@ -67,7 +70,7 @@ export const createTransaction = async (
       type,
       user,
       otherUser,
-      title
+      title,
     });
 
     // Create a new wallet transaction for the otherUser (reverse type)
@@ -283,6 +286,82 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       status: 200,
       message: `withdrawal request has been successfully ${status}`,
     });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const payWithWallet = async (req: Request, res: Response) => {
+  const { bookingId, userId } = req.body;
+  const superAdminId = await getSuperAdminId();
+  try {
+    const booking: any = await BookingPayment.findOne({
+      booking: ObjectId(bookingId.toString()),
+    });
+    if(booking.status === "PAID"){
+      return res.status(201).json({
+        status:201,
+        success:false,
+        message:"Payment has been already done"
+
+      })
+    }
+    let grandTotal = booking.grandTotal;
+    const userWallet: any = await Wallet.findOne({
+      user: ObjectId(userId.toString()),
+    });
+    if (userWallet?.amount >= grandTotal) {
+      const transaction = await createTransaction(
+        grandTotal,
+        "DEBIT",
+        userId,
+        superAdminId,
+        "Booking Payment"
+      );
+      console.log(transaction)
+      booking.status = "PAID";
+      const mainBooking: any = await Booking.findById(ObjectId(bookingId));
+      mainBooking.status = "CONFIRMED";
+      booking.paymentObj = transaction;
+      await booking.save()
+      await mainBooking.save()
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        data: {
+          isPaymentCompleted: true,
+          transaction,
+        },
+        message: "payment successfull",
+      });
+    } else {
+      let trans;
+      if (userWallet.amount !== 0) {
+        trans = await createTransaction(
+          userWallet,
+          "DEBIT",
+          userId,
+          superAdminId,
+          "Booking Payment"
+        );
+      }
+      console.log(trans, "trans")
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        data: {
+          isPaymentCompleted: false,
+          transaction:trans ? trans : null,
+          remainingAmount:grandTotal - userWallet
+        },
+        message: "partial payment successfull",
+      });
+    }
   } catch (error: any) {
     // Return error if anything goes wrong
     return res.status(403).json({

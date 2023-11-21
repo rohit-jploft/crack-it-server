@@ -54,33 +54,38 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
     console.log(upcomingBookings, "upcoming booking");
     // Iterate over the upcoming bookings and start chat conversations
     for (const booking of upcomingBookings) {
-      const convo = await createConversation(
-        [
-          ObjectId(booking.expert.toString()),
-          ObjectId(booking.user.toString()),
-        ],
-        booking._id
-      );
-      console.log(convo, "convo")
-      if (convo && convo.isNew) {
-        await createNotification(
-          ObjectId(booking.expert.toString()),
-          ObjectId(booking.user.toString()),
-          NoticationMessage.ChatInitiated.title,
-          NotificationType.Booking,
-          "web",
-          NoticationMessage.ChatInitiated.message,
-          { targetId: booking._id }
+      const checkChatCreatedOrNot = await Chat.findOne({
+        booking: ObjectId(booking._id),
+      });
+      if (!checkChatCreatedOrNot) {
+        const convo = await createConversation(
+          [
+            ObjectId(booking.expert.toString()),
+            ObjectId(booking.user.toString()),
+          ],
+          booking._id
         );
-        await createNotification(
-          ObjectId(booking.user.toString()),
-          ObjectId(booking.expert.toString()),
-          NoticationMessage.ChatInitiated.title,
-          NotificationType.Booking,
-          "web",
-          NoticationMessage.ChatInitiated.message,
-          { targetId: booking._id }
-        );
+        console.log(convo, "convo");
+        if (convo && convo.isNew) {
+          await createNotification(
+            ObjectId(booking.expert.toString()),
+            ObjectId(booking.user.toString()),
+            NoticationMessage.ChatInitiated.title,
+            NotificationType.Booking,
+            "web",
+            NoticationMessage.ChatInitiated.message,
+            { targetId: booking._id }
+          );
+          await createNotification(
+            ObjectId(booking.user.toString()),
+            ObjectId(booking.expert.toString()),
+            NoticationMessage.ChatInitiated.title,
+            NotificationType.Booking,
+            "web",
+            NoticationMessage.ChatInitiated.message,
+            { targetId: booking._id }
+          );
+        }
       }
     }
   } catch (error) {
