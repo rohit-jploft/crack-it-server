@@ -97,3 +97,13 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
     return error;
   }
 };
+
+export const markChatClosedAfterTheMeeting = async () => {
+  const todayDate = new Date();
+  const getBooking = await Booking.find(
+    { startTime: { $lt: todayDate } }
+  );
+  for(let book of getBooking){
+    const chatsDoc = await Chat.findOneAndUpdate({booking:ObjectId(book._id)}, {isClosed:true})
+  }
+}
