@@ -3,6 +3,7 @@ import { createNotification } from "../controllers/Notifications/Notification.co
 import { ObjectId } from "../helper/RequestHelper";
 import Booking from "../models/booking.model";
 import Chat from "../models/chat.model";
+import Expert from "../models/experts.model";
 import { NotificationType } from "../utils/NotificationType";
 import { NoticationMessage } from "../utils/notificationMessageConstant";
 
@@ -58,12 +59,16 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
         booking: ObjectId(booking._id),
       });
       if (!checkChatCreatedOrNot) {
+        const expert = await Expert.findOne({user:ObjectId(booking.expert.toString())});
+        const agency = expert && expert.agency ? expert.agency : null;
         const convo = await createConversation(
           [
             ObjectId(booking.expert.toString()),
             ObjectId(booking.user.toString()),
           ],
-          booking._id
+          booking._id,
+          agency
+
         );
         console.log(convo, "convo");
         if (convo && convo.isNew) {
