@@ -34,7 +34,7 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     line_items: lineItems,
     mode: "payment",
     success_url: "https://crack-it-website.netlify.app/check-payment",
-    cancel_url: "https://crack-it-website.netlify.app/wallet",
+    cancel_url: "http://crack-it-website.netlify.app/mybookings/Requested",
   });
   console.log(session, "session");
   // const check = stripe.paymentIntents.retrieve(session.id);
