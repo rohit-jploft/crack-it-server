@@ -87,6 +87,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         // const rating = await getExpertRating(expert.user._id.toString());
         const msg = await Message.findOne(
           { chat: chat._id },
+          null,
           { sort: { createdAt: -1 } }
         ).select("content type createdAt");
         console.log(msg);
@@ -365,7 +366,6 @@ export const enterChatForAdmin = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const getChatFromMeetingId = async (req: Request, res: Response) => {
   const { meetingId } = req.params;
   try {
