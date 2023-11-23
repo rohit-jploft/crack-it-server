@@ -271,7 +271,7 @@ export const validatePromoCode = async (req: Request, res: Response) => {
       });
     } else {
       return res.status(200).json({
-        success: true,
+        success: false,
         status: 200,
         type:'error',
         message: "Promo Code is invalid",

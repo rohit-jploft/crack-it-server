@@ -397,6 +397,7 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
       $or: [{ phone: mobile }],
       countryCode: countryCode,
     });
+    console.log(checkUser)
     if (!checkUser) {
       return res.status(200).json({
         success: false,

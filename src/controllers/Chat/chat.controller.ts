@@ -11,7 +11,8 @@ import { NoticationMessage } from "../../utils/notificationMessageConstant";
 
 export const createConversation = async (
   users: Types.ObjectId[],
-  bookingId: Types.ObjectId
+  bookingId: Types.ObjectId,
+  agency?:Types.ObjectId | null
 ) => {
   try {
     const check = await Chat.findOne({ booking: bookingId });
@@ -20,6 +21,7 @@ export const createConversation = async (
         participants: users,
         admin: null,
         booking: bookingId,
+        agency
       });
       return { chat: createChat, isNew: true };
     } else {
