@@ -206,6 +206,7 @@ export const loginUser = async (req: Request, res: Response) => {
           email,
           _id,
           role,
+          phone,
           isExpertProfileVerified,
         } = IsUserExist;
         const response = {
@@ -218,6 +219,7 @@ export const loginUser = async (req: Request, res: Response) => {
               firstName,
               lastName,
               email,
+              phone,
               role,
               isExpertProfileVerified,
             },

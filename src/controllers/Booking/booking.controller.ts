@@ -725,6 +725,7 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
         path: "booking",
         populate: {
           path: "expert user jobCategory skills",
+         
           select: "-password",
         },
       });

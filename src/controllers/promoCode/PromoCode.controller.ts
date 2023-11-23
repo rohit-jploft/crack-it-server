@@ -242,38 +242,46 @@ export const validatePromoCode = async (req: Request, res: Response) => {
       code: promoCode,
       expirationDate: { $lte: new Date() },
     });
-    console.log(getPromoCode, "code object from db")
+    console.log(getPromoCode, "code object from db");
     if (getPromoCode) {
       const bookingPayment: any = await BookingPayment.findOne({
         booking: ObjectId(bookingId),
       });
-      let discount;
-      discount =
-        getPromoCode.type === "FLAT"
-          ? getPromoCode.flatAmount
-          : (getPromoCode.discountPercentage * bookingPayment?.grandTotal) /
-            100;
+      console.log(bookingPayment)
+      if (bookingPayment && bookingPayment.promoCode ===null) {
+        let discount;
+        discount =
+          getPromoCode.type === "FLAT"
+            ? getPromoCode.flatAmount
+            : (getPromoCode.discountPercentage * bookingPayment?.grandTotal) /
+              100;
 
-      bookingPayment.grandTotal = bookingPayment.grandTotal - discount;
-      bookingPayment.discountAmount = discount;
+        bookingPayment.grandTotal = bookingPayment.grandTotal - discount;
+        bookingPayment.discountAmount = discount;
 
-      bookingPayment.promoCode = getPromoCode._id;
-      bookingPayment.d = getPromoCode._id;
-      await bookingPayment.save();
-      console.log(getPromoCode);
-      console.log(getPromoCode);
-
-      return res.status(200).json({
-        success: true,
-        type:'success',
-        data: getPromoCode,
-        message: "Promo Code is valid",
-      });
+        bookingPayment.promoCode = getPromoCode._id;
+        bookingPayment.d = getPromoCode._id;
+        await bookingPayment.save();
+        console.log(getPromoCode);
+        console.log(getPromoCode);
+        return res.status(200).json({
+          success: true,
+          type: "success",
+          data: getPromoCode,
+          message: "Promo Code is valid",
+        });
+      } else {
+        return res.status(200).json({
+          success: false,
+          type: "success",
+          message: "Promo Code is already applied",
+        });
+      }
     } else {
       return res.status(200).json({
         success: false,
         status: 200,
-        type:'error',
+        type: "error",
         message: "Promo Code is invalid",
       });
     }

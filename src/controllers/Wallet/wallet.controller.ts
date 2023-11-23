@@ -75,16 +75,18 @@ export const createTransaction = async (
 
     // Create a new wallet transaction for the otherUser (reverse type)
     const otherUserTransaction = new WalletTransaction({
-      amount,
+      amount:amount,
       type: type === "CREDIT" ? "DEBIT" : "CREDIT",
       user: otherUser,
       otherUser: user,
       title,
     });
-
+    console.log(amount, "amount")
+    console.log({ otherUserTransaction, userTransaction });
     // Save both transactions
     await userTransaction.save();
     await otherUserTransaction.save();
+    console.log({ otherUserTransaction, userTransaction });
 
     // Update the user's wallet balance based on the transaction type
     if (type === "CREDIT") {
@@ -214,6 +216,10 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
 
   if (userId) {
     query.user = ObjectId(userId.toString());
+  } else {
+    const uId = res.locals.user._id;
+    query.user = ObjectId(uId.toString());
+
   }
   if (status) {
     query.status = { $regex: status, $options: "i" };
@@ -303,19 +309,22 @@ export const payWithWallet = async (req: Request, res: Response) => {
     const booking: any = await BookingPayment.findOne({
       booking: ObjectId(bookingId.toString()),
     });
-    if(booking.status === "PAID"){
+    if (booking.status === "PAID") {
       return res.status(201).json({
-        status:201,
-        success:false,
-        message:"Payment has been already done"
-
-      })
+        status: 201,
+        success: false,
+        message: "Payment has been already done",
+      });
     }
     let grandTotal = booking.grandTotal;
+    console.log(grandTotal, "grandTotal")
     const userWallet: any = await Wallet.findOne({
       user: ObjectId(userId.toString()),
     });
+    console.log(userWallet, 'userWallet')
     if (userWallet?.amount >= grandTotal) {
+      // console.log(grandTotal, "grandTotal")
+
       const transaction = await createTransaction(
         grandTotal,
         "DEBIT",
@@ -323,13 +332,13 @@ export const payWithWallet = async (req: Request, res: Response) => {
         superAdminId,
         "Booking Payment"
       );
-      console.log(transaction)
+      console.log(transaction);
       booking.status = "PAID";
       const mainBooking: any = await Booking.findById(ObjectId(bookingId));
       mainBooking.status = "CONFIRMED";
       booking.paymentObj = transaction;
-      await booking.save()
-      await mainBooking.save()
+      await booking.save();
+      await mainBooking.save();
       return res.status(200).json({
         status: 200,
         success: true,
@@ -343,21 +352,21 @@ export const payWithWallet = async (req: Request, res: Response) => {
       let trans;
       if (userWallet.amount !== 0) {
         trans = await createTransaction(
-          userWallet,
+          userWallet.amount,
           "DEBIT",
           userId,
           superAdminId,
           "Booking Payment"
         );
       }
-      console.log(trans, "trans")
+      console.log(trans, "trans");
       return res.status(200).json({
         status: 200,
         success: true,
         data: {
           isPaymentCompleted: false,
-          transaction:trans ? trans : null,
-          remainingAmount:grandTotal - userWallet
+          transaction: trans ? trans : null,
+          remainingAmount: grandTotal - userWallet.amount,
         },
         message: "partial payment successfull",
       });
