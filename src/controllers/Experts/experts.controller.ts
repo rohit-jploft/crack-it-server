@@ -268,7 +268,7 @@ export const getAllExpertBasedOnSearch = async (
       });
     }
     const experts = await Expert.aggregate(pipeline);
-    const list = await Promise.all(
+    const list:any = await Promise.all(
       experts.map(async (expert) => {
         const rating = await getExpertRating(expert.user._id.toString());
         return {
@@ -280,11 +280,13 @@ export const getAllExpertBasedOnSearch = async (
     let finalList;
     if (rating) {
       finalList = await Promise.all(
-        list.filter((exprt) => {
+        list.filter((exprt:any) => {
           return parseInt(exprt.rating.toString()) >= parseInt(`${rating}`);
         })
       );
     }
+    console.log(list, "list")
+    console.log(finalList, "final list")
     return res.status(200).json({
       success: true,
       status: 200,
@@ -309,6 +311,9 @@ export const updateExpert = async (req: Request, res: Response) => {
     const exp: any = await Expert.findOne({
       user: ObjectId(userId.toString()),
     });
+    const user: any = await User.findOne({
+      _id: ObjectId(userId.toString()),
+    });
 
     if (!exp) {
       return res.status(200).json({
@@ -317,6 +322,8 @@ export const updateExpert = async (req: Request, res: Response) => {
         message: "Expert not found",
       });
     }
+    user.firstName = data.firstName ? data.firstName : user.firstName;
+    user.lastName = data.lastName ? data.lastName : user.lastName;
     exp.description = data.description ? data.description : exp.description;
     exp.price = data.price ? data.price : exp.price;
     exp.languages = data.language ? data.language : exp.languages;
@@ -325,6 +332,7 @@ export const updateExpert = async (req: Request, res: Response) => {
     exp.experience = data?.experience ? data?.experience : exp.experience;
 
     await exp.save();
+    await user.save()
 
     return res.status(200).json({
       status: 200,

@@ -37,6 +37,7 @@ import { checkAndVerifyPayment } from "./controllers/Payment/payment.controller"
 import { createConversation } from "./controllers/Chat/chat.controller";
 import User from "./models/user.model";
 import Booking from "./models/booking.model";
+import { getExpertRating } from "./controllers/Rating/rating.controller";
 //dot env
 dotenv.config();
 
@@ -203,6 +204,7 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
+    console.log(await getExpertRating("6565c50341468cf6dc072a1f"), "rating")
     // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
 
     console.log("database connected");

@@ -35,7 +35,8 @@ export const createTransaction = async (
   type: "CREDIT" | "DEBIT",
   user: Types.ObjectId,
   otherUser: Types.ObjectId,
-  title: string
+  title: string,
+  txnType?:string
 ) => {
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
@@ -53,15 +54,21 @@ export const createTransaction = async (
     // Check the otherUser's wallet balance (only for CREDIT transactions)
     if (type === "CREDIT") {
       otherUserWallet = await Wallet.findOne({ user: otherUser });
+      const otherUserRole = await User.findOne({ _id: otherUser });
 
       if (!otherUserWallet) {
         return { type: "error", message: "Other user wallet not found" };
       }
 
-      if (otherUserWallet.amount < amount) {
-        return { type: "error", message: "Other user has insufficient funds" };
+      if (otherUserRole?.role !== "SUPER_ADMIN" || txnType && txnType === "WITHDRAWAL") {
+        if (otherUserWallet.amount < amount) {
+          return {
+            type: "error",
+            message: "Other user has insufficient funds",
+          };
+        }
+        otherUserWallet.amount -= amount;
       }
-      otherUserWallet.amount -= amount;
     }
 
     // Create a new wallet transaction for the user
@@ -75,23 +82,21 @@ export const createTransaction = async (
 
     // Create a new wallet transaction for the otherUser (reverse type)
     const otherUserTransaction = new WalletTransaction({
-      amount:amount,
+      amount: amount,
       type: type === "CREDIT" ? "DEBIT" : "CREDIT",
       user: otherUser,
       otherUser: user,
       title,
     });
-    console.log(amount, "amount")
-    console.log({ otherUserTransaction, userTransaction });
+    console.log(amount, "amount");
     // Save both transactions
     await userTransaction.save();
     await otherUserTransaction.save();
-    console.log({ otherUserTransaction, userTransaction });
 
     // Update the user's wallet balance based on the transaction type
     if (type === "CREDIT") {
       userWallet.amount += amount;
-    } else if (type === "DEBIT") {
+    } else if (type === "DEBIT" && txnType !== "WITHDRAWAL") {
       userWallet.amount -= amount;
     }
 
@@ -217,9 +222,8 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
   if (userId) {
     query.user = ObjectId(userId.toString());
   } else {
-    const uId = res.locals.user._id;
-    query.user = ObjectId(uId.toString());
-
+    // const uId = res.locals.user._id;
+    // query.user = ObjectId(uId.toString());
   }
   if (status) {
     query.status = { $regex: status, $options: "i" };
@@ -263,7 +267,7 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       });
     } else {
       withdrawal.status = status;
-      const admin = await User.findOne({ role: "ADMIN" });
+      const admin = await User.findOne({ role: "SUPER_ADMIN" });
       await createNotification(
         admin?._id,
         withdrawal.user,
@@ -274,15 +278,16 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
         { targetId: withdrawal?._id },
         {}
       );
-      const wallet: any = await Wallet.findOne({ user: withdrawal.user });
-      wallet.amount = wallet.amount + withdrawal.amount;
-      await wallet.save();
+      // const wallet: any = await Wallet.findOne({ user: withdrawal.user });
+      // wallet.amount = wallet.amount + withdrawal.amount;
+      // await wallet.save();   
       await createTransaction(
         withdrawal?.amount,
         "DEBIT",
         withdrawal?.user,
         admin?._id,
-        "Withdraw"
+        "Withdraw",
+        "WITHDRAWAL"
       );
       await withdrawal.save();
     }
@@ -317,11 +322,11 @@ export const payWithWallet = async (req: Request, res: Response) => {
       });
     }
     let grandTotal = booking.grandTotal;
-    console.log(grandTotal, "grandTotal")
+    console.log(grandTotal, "grandTotal");
     const userWallet: any = await Wallet.findOne({
       user: ObjectId(userId.toString()),
     });
-    console.log(userWallet, 'userWallet')
+    console.log(userWallet, "userWallet");
     if (userWallet?.amount >= grandTotal) {
       // console.log(grandTotal, "grandTotal")
 

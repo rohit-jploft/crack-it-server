@@ -23,7 +23,7 @@ const signupSchema: Joi.ObjectSchema<signUpDto> = Joi.object<signUpDto>().keys({
     Roles.ADMIN,
     Roles.EXPERT
   ),
-  referBy:Joi.string(),
+  referBy:Joi.string().allow(""),
   countryCode: Joi.string(),
   phone: Joi.number(),
   termAndConditions: Joi.bool().valid(true),

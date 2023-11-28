@@ -178,7 +178,7 @@ export const getConvoMessage = async (req: Request, res: Response) => {
   try {
     const convo = await Message.find({
       chat: ObjectId(convoId),
-    }).populate("sender", "_id firstName lastName");
+    }).populate("sender", "_id firstName lastName profilePhoto");
     return res.status(200).json({
       success: true,
       status: 200,

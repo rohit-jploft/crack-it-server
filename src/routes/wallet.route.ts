@@ -11,7 +11,7 @@ router.get("/transactions/get/:userId", getUsersTransaction);
 
 // create withdrawal request
 router.post("/withdrawal/request/create", createWithdrawRequest);
-router.get("/withdrawal/get/all", isAuthenticated,getAllWithdrawalReq);
+router.get("/withdrawal/get/all",getAllWithdrawalReq);
 // status update
 router.put("/withdrawal/update/status/:id", updateWithDrawalReq);
 

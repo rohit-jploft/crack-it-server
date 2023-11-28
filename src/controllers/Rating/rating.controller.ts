@@ -23,18 +23,22 @@ export const rateExpert = async (req: Request, res: Response) => {
 
   try {
     const rate = await ExpertRating.findOne({
-      ratedBy: value.ratedBy,
-      expert: value.expert,
+      ratedBy: ObjectId(value.ratedBy),
+      expert: ObjectId(value.expert),
+      booking:ObjectId(value.bookingId),
+      
     });
     if (rate) {
       rate.rating = value.rating;
-      rate.comment = value.comment ? value.comment : rate.comment;
+      rate.comment = value.comment ? value.comment : rate?.comment ? rate.comment : "";
       const updatedRating = await rate.save();
 
       const updateratedOrNot = await Booking.findByIdAndUpdate(
         ObjectId(value.bookingId.toString()),
-        { isExpertRated: true }
+        { isExpertRated: true },
+        {new:true}
       );
+      console.log(updateratedOrNot)
 
       await createNotification(
         value.ratedBy,
@@ -51,7 +55,18 @@ export const rateExpert = async (req: Request, res: Response) => {
         message: "Rating updated successfully",
       });
     } else {
-      const rate = await ExpertRating.create(value);
+      const rate = await ExpertRating.create({
+        expert:value.expert,
+        ratedBy:value.ratedBy,
+        booking:value.bookingId,
+        rating:value.rating,
+        comment:value.comment ? value.comment : ""
+      });
+      const updateratedOrNot = await Booking.findByIdAndUpdate(
+        ObjectId(value.bookingId.toString()),
+        { isExpertRated: true },
+        {new:true}
+      );
       return res.status(200).json({
         success: true,
         status: 200,
@@ -73,6 +88,7 @@ export const getExpertRating = async (userId: string) => {
   const ratings = await ExpertRating.find({ expert: ObjectId(userId) });
   let avgRating;
   let totalRating = 0;
+  console.log(ratings, "rating data")
   if (ratings.length > 0) {
     for (let rating of ratings) {
       totalRating = totalRating + rating.rating;

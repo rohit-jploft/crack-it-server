@@ -60,7 +60,6 @@ export const createBooking = async (req: Request, res: Response) => {
       value.timeZone,
       true
     );
-    console.log(finalDate, "finalDate");
 
     const checkIfalreadyBooked = await Booking.findOne({
       expert: ObjectId(value.expert),
@@ -77,7 +76,6 @@ export const createBooking = async (req: Request, res: Response) => {
       status: { $in: ["ACCEPTED", "REQUESTED"] },
     });
     const finalEndTime = addMinutesToTime(value.startTime, value.duration);
-    console.log(checkIfalreadyBooked, "checkIfalreadyBooked");
     if (!checkIfalreadyBooked) {
       const bookingObj = new Booking({
         user: ObjectId(value.user),
@@ -104,7 +102,6 @@ export const createBooking = async (req: Request, res: Response) => {
         ),
       });
       // console.log(value.startTime);
-      console.log(bookingObj);
       const getCommission: any = await Commission.findOne({
         type: "FIXED",
         isDeleted: false,
@@ -123,7 +120,7 @@ export const createBooking = async (req: Request, res: Response) => {
         { targetId: savedBooking._id }
       );
       const agency = await getAgencyOfAnyExpert(ObjectId(value.expert));
-      if (agency && agency?.isAssociatedWithAgency) {
+      if (agency && agency?.isAssociatedWithAgency && agency !== null) {
         await createNotification(
           ObjectId(value.user),
           ObjectId(agency.agencyId),
@@ -142,7 +139,8 @@ export const createBooking = async (req: Request, res: Response) => {
         CommissionAmount: totalCommission,
         grandTotal: totalAmount + totalCommission,
       });
-      await bookPaymentObj.save();
+  
+      const savedPayment = await bookPaymentObj.save();
       return res.status(200).json({
         status: 200,
         success: true,
@@ -252,7 +250,6 @@ const getTimeFromDate = (date: Date) => {
 // };
 export const getAllBooking = async (req: Request, res: Response) => {
   const { userId, status, role, tabStatus } = req.query;
-  console.log("query", req.query);
   const currentPage = Number(req?.query?.page) + 1 || 1;
   const currentDateTime = new Date();
   let limit = Number(req?.query?.limit) || 10;
@@ -315,7 +312,6 @@ export const getAllBooking = async (req: Request, res: Response) => {
   if (status) {
     matchQuery.status = { $regex: status.toString(), $options: "i" };
   }
-  console.log(matchQuery);
   try {
     const aggregatePipeline: any[] = [
       {
@@ -452,7 +448,6 @@ export const getAllBooking = async (req: Request, res: Response) => {
       },
     ];
 
-    console.log(aggregatePipeline);
     const bookings = await Booking.aggregate([...aggregatePipeline]);
 
     const totalCount = await Booking.countDocuments(matchQuery);
@@ -498,9 +493,10 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
   try {
     const superAdminId = await getSuperAdminId();
     const booking: any = await Booking.findById(bookingId);
+    const bookingPayment: any = await BookingPayment.findOne({booking:ObjectId(bookingId.toString())});
     const ExpertWallet: any = await Wallet.findOne({ user: booking.expert });
 
-    if (ExpertWallet.amount <= 25) {
+    if (ExpertWallet.amount < 25) {
       return {
         isLow: false,
       };
@@ -512,7 +508,14 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
         superAdminId,
         "Cancellation charge"
       );
-      return trans;
+      var userTrans = await createTransaction(
+        bookingPayment.totalAmount,
+        "CREDIT",
+        booking.user,
+        superAdminId,
+        "Cancellation return"
+      );
+      return {trans, userTrans, isLow:true};
     }
   } catch (error: any) {
     return error.message;
@@ -526,17 +529,20 @@ export const cancelBooking = async (req: Request, res: Response) => {
     const booking: any = await Booking.findById(ObjectId(bookingId));
 
     if (role === "USER" && booking.status === "CONFIRMED") {
-      await getRefundAmountFromBooking(booking._id);
+
+      const ref = await getRefundAmountFromBooking(booking._id);
+      console.log(ref, "ref")
     }
     if (role === "EXPERT" && booking.status === "CONFIRMED") {
       // + 50 is for store creedit
-      await createTransaction(
+     const trans = await createTransaction(
         booking.totalAmount + 50,
         "CREDIT",
         booking.user,
         superAdminId,
         "Refund for cancellation by expert"
       );
+      console.log(trans, "trans")
     }
     if (role === "EXPERT" && booking.status === "CONFIRMED") {
       const check: any = await ifCancelByExpertThanFirstChargeThanRefund(
@@ -729,7 +735,6 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
           select: "-password",
         },
       });
-    console.log(payment);
     const expert = await Expert.findOne({
       user: ObjectId(payment?.booking?.expert?._id.toString()),
     }).populate("jobCategory");

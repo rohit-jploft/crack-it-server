@@ -234,6 +234,7 @@ export const addNewAgencyExpert = async (req: Request, res: Response) => {
         email: value.email.toLowerCase(),
         phone: value.phone,
         role: Roles.EXPERT,
+        agency:value.agency,
         profilePhoto: value.profilePhoto,
         password: hashedPassword,
         countryCode: value.countryCode,

@@ -3,6 +3,7 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 export interface ExpertRatingData {
   rating: number;
   expert: Types.ObjectId;
+  booking: Types.ObjectId;
   ratedBy: Types.ObjectId;
   comment?: string;
 }
@@ -17,6 +18,10 @@ const ExpertRatingSchema: Schema<ExpertRatingDocument> =
       rating: {
         type: Number,
         require: true,
+      },
+      booking:{
+        type: Schema.Types.ObjectId,
+        ref: "Booking",
       },
       expert: {
         type: Schema.Types.ObjectId,

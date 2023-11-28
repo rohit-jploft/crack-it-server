@@ -9,6 +9,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
   try {
     const totalUser = await User.countDocuments({ role: "USER" });
     const totalExpert = await User.countDocuments({ role: "EXPERT" });
+    const totalAgency = await User.countDocuments({ role: "AGENCY" });
     const totalMeetingCompleted =
       (await Booking.countDocuments({ status: "CONFIRMED" })) || 0;
     // const totalEarning = await BookingPayment.countDocuments({status:"PAID"}) || 0;
@@ -44,7 +45,13 @@ export const getDashboardData = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       status: 200,
-      data: { totalUser, totalExpert, totalEarning, totalMeetingCompleted },
+      data: {
+        totalUser,
+        totalExpert,
+        totalEarning,
+        totalMeetingCompleted,
+        totalAgency,
+      },
       message: "Dashboard data fetched",
     });
   } catch (error: any) {
@@ -84,8 +91,16 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
   const skip = limit * (currentPage - 1);
 
-  var query = <queryData>{};
-  if (role) query.role = role.toString();
+  var query = <any>{};
+  if (role && role !== "AGENCY-EXPERT") {
+    query.role = role.toString()
+    query.agency = {$exists:false}
+  };
+  if (role === "AGENCY-EXPERT") {
+    // query.role = "EXPERT"
+    query.agency ={$exists:true}
+    
+  }
   if (search) {
     query.$or = [
       { firstName: { $regex: search, $options: "i" } },
@@ -98,10 +113,16 @@ export const getAllUsers = async (req: Request, res: Response) => {
     query.role = { $in: [Roles.USER, Roles.EXPERT] };
   }
   if (isAdmin && isAdmin === "0" && role) {
-    query.role = { $in: [role.toString()] };
+    
+    if (role === "AGENCY-EXPERT") {
+        query.role = "EXPERT"
+    } else {
+      query.role = { $in: [role.toString()] };
+    }
   }
 
   try {
+    console.log("query ", query)
     const users = await User.find(query, { password: 0 })
       .skip(skip)
       .limit(limit)

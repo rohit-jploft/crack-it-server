@@ -8,6 +8,7 @@ interface UserData {
   phone: number;
   countryCode: string;
   password: string;
+  agency:Types.ObjectId;
   role?: string;
   profilePhoto?:string;
   timeZone?:string;
@@ -40,6 +41,10 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       type: String,
       trim: true,
       default: "",
+    },
+    agency:{
+        type:Schema.Types.ObjectId,
+        ref:"User"
     },
     phone: {
       type: Number,

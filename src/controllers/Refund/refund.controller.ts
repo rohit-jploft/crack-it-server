@@ -55,7 +55,11 @@ export const getRefundAmountFromBooking = async (bookingId: Types.ObjectId) => {
     const getPercentage = await getTheRefundPercentage(getHourBefore);
     const expertrefundAmount =
       (getPercentage.expertPercentShare * payment.totalAmount) / 100;
+    const userRefundAmount =
+      ((100 - getPercentage.penaltyPercentage) * payment.totalAmount) / 100;
     const superAdmin = await User.findOne({ role: "SUPER_ADMIN" });
+    console.log(superAdmin, "superadmin");
+    console.log(booking, "booking");
     const Experttrans = await createTransaction(
       expertrefundAmount,
       "CREDIT",
@@ -63,7 +67,15 @@ export const getRefundAmountFromBooking = async (bookingId: Types.ObjectId) => {
       superAdmin?._id,
       "REFUND"
     );
-    return Experttrans;
+    const userTrans = await createTransaction(
+      userRefundAmount,
+      "CREDIT",
+      booking.user,
+      superAdmin?._id,
+      "REFUND"
+    );
+
+    return { Experttrans, userTrans };
   } catch (error: any) {
     return error.message;
   }
