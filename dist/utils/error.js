@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.INCORRECT_PASSWORD = exports.INVALID_OTP = exports.ACCESS_DENIED_ERR = exports.PHONE_NOT_FOUND_ERR = exports.USER_NOT_FOUND_ERR = exports.JWT_DECODE_ERR = exports.AUTH_TOKEN_MISSING_ERR = exports.AUTH_HEADER_MISSING_ERR = exports.SERVER_ERR = exports.USER_ALREADY_EXISTS = exports.API_ENDPOINT_NOT_FOUND_ERR = void 0;
+exports.API_ENDPOINT_NOT_FOUND_ERR = "Api endpoint does not found";
+exports.USER_ALREADY_EXISTS = "User already exists";
+exports.SERVER_ERR = "Something went wrong";
+exports.AUTH_HEADER_MISSING_ERR = "auth header is missing";
+exports.AUTH_TOKEN_MISSING_ERR = "auth token is missing";
+exports.JWT_DECODE_ERR = "incorrect token";
+exports.USER_NOT_FOUND_ERR = "User not found";
+exports.PHONE_NOT_FOUND_ERR = "Phone number not found";
+exports.ACCESS_DENIED_ERR = "Access deny for normal user";
+exports.INVALID_OTP = "Invalid Otp";
+exports.INCORRECT_PASSWORD = "Incorrect Password";

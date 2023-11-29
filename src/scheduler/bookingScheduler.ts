@@ -30,7 +30,7 @@ export const makeStatusFromConfirmedToCompleted = async () => {
     });
     const superAdminId = await getSuperAdminId();
     for (let book of booking) {
-      const bookingPayment:any = await BookingPayment.findOne({
+      const bookingPayment: any = await BookingPayment.findOne({
         booking: ObjectId(book._id),
       });
       await Chat.findOneAndUpdate(
@@ -58,8 +58,11 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
     const upcomingBookings = await Booking.find({
       startTime: {
         $lte: new Date(currentTime.getTime() + 15 * 60000),
-        $gt: currentTime,
+        $gte: currentTime,
       },
+      // endTime: {
+      //   $gt: currentTime,
+      // },
       // date:
       status: "CONFIRMED", // Adjust this to match your criteria for initiating chat conversations
     });

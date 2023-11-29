@@ -143,7 +143,7 @@ export const getAllExpertBasedOnSearch = async (
     let expertise: any = skills
       ?.toString()
       .split(",")
-      .map((item: string) => item.trim());
+      .map((item: string) => ObjectId(item.trim()));
 
     const pipeline = [];
     var typeLength;
@@ -273,7 +273,7 @@ export const getAllExpertBasedOnSearch = async (
         const rating = await getExpertRating(expert.user._id.toString());
         return {
           ...expert,
-          rating: rating,
+          rating: rating.toFixed(1),
         };
       })
     );
