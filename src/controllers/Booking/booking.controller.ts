@@ -534,17 +534,6 @@ export const cancelBooking = async (req: Request, res: Response) => {
       console.log(ref, "ref")
     }
     if (role === "EXPERT" && booking.status === "CONFIRMED") {
-      // + 50 is for store creedit
-     const trans = await createTransaction(
-        booking.totalAmount + 50,
-        "CREDIT",
-        booking.user,
-        superAdminId,
-        "Refund for cancellation by expert"
-      );
-      console.log(trans, "trans")
-    }
-    if (role === "EXPERT" && booking.status === "CONFIRMED") {
       const check: any = await ifCancelByExpertThanFirstChargeThanRefund(
         res,
         ObjectId(bookingId)
@@ -557,6 +546,18 @@ export const cancelBooking = async (req: Request, res: Response) => {
         });
       }
     }
+    if (role === "EXPERT" && booking.status === "CONFIRMED") {
+      // + 50 is for store creedit
+     const trans = await createTransaction(
+        booking.totalAmount + 50,
+        "CREDIT",
+        booking.user,
+        superAdminId,
+        "Refund for cancellation by expert"
+      );
+      console.log(trans, "trans")
+    }
+    
     // await createNewRefundRequest(ObjectId(bookingId),50 );
     booking.status = "CANCELLED";
     await createNotification(

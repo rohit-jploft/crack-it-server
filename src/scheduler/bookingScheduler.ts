@@ -51,7 +51,7 @@ export const makeStatusFromConfirmedToCompleted = async () => {
   }
 };
 
-export const startChatForConfirmedBookingBefore15Min = async () => {
+export const startChatForConfirmedBookingBefore15Min = async () => {  
   const currentTime = new Date();
   try {
     // Find upcoming bookings where the chat should be started
@@ -113,7 +113,7 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
 
 export const markChatClosedAfterTheMeeting = async () => {
   const todayDate = new Date();
-  const getBooking = await Booking.find({ startTime: { $lt: todayDate } });
+  const getBooking = await Booking.find({ endTime: { $lt: todayDate } });
   for (let book of getBooking) {
     const chatsDoc = await Chat.findOneAndUpdate(
       { booking: ObjectId(book._id) },
