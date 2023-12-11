@@ -94,7 +94,7 @@ export const getExpertRating = async (userId: string) => {
       totalRating = totalRating + rating.rating;
     }
     avgRating = totalRating / ratings.length;
-    return avgRating;
+    return avgRating.toFixed(1);
   } else {
     return 0;
   }

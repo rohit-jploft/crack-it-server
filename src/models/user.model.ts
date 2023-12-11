@@ -6,6 +6,7 @@ interface UserData {
   lastName: string;
   agencyName:string;
   phone: number;
+  otp: number;
   countryCode: string;
   password: string;
   agency:Types.ObjectId;
@@ -45,6 +46,9 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     agency:{
         type:Schema.Types.ObjectId,
         ref:"User"
+    },
+    otp:{
+      type:Number,
     },
     phone: {
       type: Number,

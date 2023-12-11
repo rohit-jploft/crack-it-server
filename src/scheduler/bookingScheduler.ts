@@ -13,10 +13,7 @@ import { NoticationMessage } from "../utils/notificationMessageConstant";
 export const makeStatusFromConfirmedToCompleted = async () => {
   try {
     const todaysDate = new Date();
-    const getBooking = await Booking.updateMany(
-      { status: "CONFIRMED", endTime: { $lt: todaysDate } },
-      { status: "COMPLETED" }
-    );
+
     const ReqBooking = await Booking.updateMany(
       {
         status: { $in: ["REQUESTED", "ACCEPTED"] },
@@ -33,10 +30,10 @@ export const makeStatusFromConfirmedToCompleted = async () => {
       const bookingPayment: any = await BookingPayment.findOne({
         booking: ObjectId(book._id),
       });
-      await Chat.findOneAndUpdate(
-        { booking: ObjectId(book._id) },
-        { isClosed: true }
-      );
+      // await Chat.findOneAndUpdate(
+      //   { booking: ObjectId(book._id) },
+      //   { isClosed: true }
+      // );
       await createTransaction(
         bookingPayment?.totalAmount,
         "CREDIT",
@@ -45,13 +42,17 @@ export const makeStatusFromConfirmedToCompleted = async () => {
         "Booking Payment"
       );
     }
+    const getBooking = await Booking.updateMany(
+      { status: "CONFIRMED", endTime: { $lt: todaysDate } },
+      { status: "COMPLETED" }
+    );
     return getBooking;
   } catch (error) {
     return error;
   }
 };
 
-export const startChatForConfirmedBookingBefore15Min = async () => {  
+export const startChatForConfirmedBookingBefore15Min = async () => {
   const currentTime = new Date();
   try {
     // Find upcoming bookings where the chat should be started
@@ -113,7 +114,9 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
 
 export const markChatClosedAfterTheMeeting = async () => {
   const todayDate = new Date();
-  const getBooking = await Booking.find({ endTime: { $lt: todayDate } });
+  const getBooking = await Booking.find({
+    endTime: { $lt: new Date(todayDate.getTime() + 15 * 60 * 1000) },
+  });
   for (let book of getBooking) {
     const chatsDoc = await Chat.findOneAndUpdate(
       { booking: ObjectId(book._id) },

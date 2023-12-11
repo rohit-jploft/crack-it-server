@@ -12,7 +12,7 @@ import { NoticationMessage } from "../../utils/notificationMessageConstant";
 export const createConversation = async (
   users: Types.ObjectId[],
   bookingId: Types.ObjectId,
-  agency?:Types.ObjectId | null
+  agency?: Types.ObjectId | null
 ) => {
   try {
     const check = await Chat.findOne({ booking: bookingId });
@@ -21,7 +21,7 @@ export const createConversation = async (
         participants: users,
         admin: null,
         booking: bookingId,
-        agency
+        agency,
       });
       return { chat: createChat, isNew: true };
     } else {
@@ -87,11 +87,9 @@ export const getUsersConversation = async (req: Request, res: Response) => {
     const finalList = await Promise.all(
       chatConvo.map(async (chat: any) => {
         // const rating = await getExpertRating(expert.user._id.toString());
-        const msg = await Message.findOne(
-          { chat: chat._id },
-          null,
-          { sort: { createdAt: -1 } }
-        ).select("content type createdAt");
+        const msg = await Message.findOne({ chat: chat._id }, null, {
+          sort: { createdAt: -1 },
+        }).select("content type createdAt");
         console.log(msg);
         return {
           ...chat._doc,
@@ -99,6 +97,13 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         };
       })
     );
+    // console.log(finalList)
+    finalList.sort((a, b) => {
+      const timestampA = a.latestMessage ? a.latestMessage.createdAt : 0;
+      const timestampB = b.latestMessage ? b.latestMessage.createdAt : 0;
+      return timestampB - timestampA;
+    });
+    // console.log(finalList)
     return res.status(200).json({
       success: true,
       status: 200,
@@ -207,6 +212,7 @@ export const searchConversations = async (req: Request, res: Response) => {
             { admin: userId },
             { superAdmin: userId },
           ],
+          isClosed: false,
         },
       },
       {

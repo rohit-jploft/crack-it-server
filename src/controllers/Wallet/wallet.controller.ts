@@ -36,7 +36,7 @@ export const createTransaction = async (
   user: Types.ObjectId,
   otherUser: Types.ObjectId,
   title: string,
-  txnType?:string
+  txnType?: string
 ) => {
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
@@ -60,7 +60,10 @@ export const createTransaction = async (
         return { type: "error", message: "Other user wallet not found" };
       }
 
-      if (otherUserRole?.role !== "SUPER_ADMIN" || txnType && txnType === "WITHDRAWAL") {
+      if (
+        otherUserRole?.role !== "SUPER_ADMIN" ||
+        (txnType && txnType === "WITHDRAWAL")
+      ) {
         if (otherUserWallet.amount < amount) {
           return {
             type: "error",
@@ -111,6 +114,10 @@ export const createTransaction = async (
 export const getUsersTransaction = async (req: Request, res: Response) => {
   const currentPage = Number(req?.query?.page) + 1 || 1;
 
+  let limit = Number(req?.query?.limit) || 10;
+
+  const skip = limit * (currentPage - 1);
+
   try {
     const userId = req.params.userId;
 
@@ -123,14 +130,23 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
 
     // Find and return wallet transactions for the user
     const transactions = await WalletTransaction.find({ user: userId })
+      .skip(skip)
+      .limit(limit)
       .populate("user", "firstName lastName")
       .populate("otherUser", "firstName lastName")
       .sort({ createdAt: -1 });
+
+      console.log(transactions, "transactions")
     const wallet = await createWallet(userId);
+    console.log(wallet, "wallet")
+    const totalCount: any = await WalletTransaction.countDocuments({ user: ObjectId(userId) });
+    console.log(totalCount, "totalCount")
+
     res.status(200).json({
       success: true,
       type: "success",
       data: { wallet: wallet, transactions },
+      pagination: pagination(totalCount, currentPage, limit),
       message: "All transaction fetched successfully",
     });
   } catch (error: any) {
@@ -280,7 +296,7 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       );
       // const wallet: any = await Wallet.findOne({ user: withdrawal.user });
       // wallet.amount = wallet.amount + withdrawal.amount;
-      // await wallet.save();   
+      // await wallet.save();
       await createTransaction(
         withdrawal?.amount,
         "DEBIT",

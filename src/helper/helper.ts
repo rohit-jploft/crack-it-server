@@ -13,6 +13,11 @@ export function generateRandomNumber(): number {
   const max = 99999999; // Maximum 8-digit number (99999999)
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+export function generateOtp(): number {
+  const min = 100000; // Minimum 8-digit number (10000000)
+  const max = 999999; // Maximum 8-digit number (99999999)
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 // this function is used for storing time in mongodb ;
 export function getTimeInDateStamp(time: string): string {

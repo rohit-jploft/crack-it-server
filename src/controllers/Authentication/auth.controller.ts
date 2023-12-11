@@ -19,6 +19,8 @@ import { checkVerification, sendVerification } from "../../helper/smsService";
 import Expert from "../../models/experts.model";
 import { Roles } from "../../utils/role";
 import { existsSync, unlinkSync } from "fs";
+import { generateOtp, generateRandomNumber } from "../../helper/helper";
+import { sendEmailfromSmtp } from "../../helper/mailService";
 
 export const createNewUser = async (req: Request, res: Response) => {
   let data = req.body;
@@ -393,13 +395,21 @@ export const changePassword = async (req: Request, res: Response) => {
 };
 
 export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
-  const { mobile, countryCode } = req.body;
+  const { mobile, email, type, countryCode } = req.body;
   try {
+    let query: any = {};
+    if (type === "EMAIL") {
+      query.email = { $regex: email, $options: "i" };
+    } else if (type === "PHONE") {
+      query.phone = mobile;
+    }
     const checkUser = await User.findOne({
-      $or: [{ phone: mobile }],
-      countryCode: countryCode,
+      $or: [query],
+      isDeleted: false,
+      // countryCode: countryCode,
     });
-    console.log(checkUser)
+
+    // console.log(checkUser);
     if (!checkUser) {
       return res.status(200).json({
         success: false,
@@ -407,7 +417,34 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
         message: "User not found",
       });
     }
+    if (type === "EMAIL") {
+      const newOtp = generateOtp();
+      const sendEmail = await sendEmailfromSmtp(
+        email,
+        "RESET PASSWORD",
+        `Dear ${
+          checkUser && checkUser?.firstName
+            ? checkUser.firstName
+            : checkUser.agencyName
+        },
+
+      Your OTP for authentication is: ${newOtp}
+      
+      This OTP will expire in 15 Min. Please do not share it with anyone for security reasons.
+      
+      Thank you,
+      Crack-IT`
+      );
+      checkUser.otp = newOtp;
+      await checkUser.save();
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        message: "Otp sent successfully on your registered mail id",
+      });
+    }
     if (mobile && countryCode) {
+      // const
       // const sendSms = await sendVerification(mobile, countryCode);
       // if (sendSms) console.log(sendSms);
       return res.status(200).json({
@@ -428,10 +465,17 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
   try {
     console.log(req.body);
 
-    const { mobile, countryCode, otp } = req.body;
+    const { mobile, email, countryCode, otp, type } = req.body;
+    let query: any = {};
+    if (type === "EMAIL") {
+      query.email = email;
+    } else {
+      query.phone = mobile;
+      query.countryCode= countryCode;
+    }
     const user = await User.findOne({
-      phone: mobile,
-      countryCode: countryCode,
+     ...query
+      
     });
     if (!user) {
       return res.status(200).json({
@@ -440,13 +484,33 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
         message: "User not found",
       });
     }
-    if (mobile && countryCode && otp) {
-      // const verifyOtp = await checkVerification(countryCode, mobile, otp);
-      console.log(typeof otp);
-      const verifyOtp = {
-        valid: otp == 123456 ? true : false,
-      };
-      if (verifyOtp && verifyOtp.valid) {
+    // if (mobile && countryCode && otp) {
+    //   // const verifyOtp = await checkVerification(countryCode, mobile, otp);
+    //   console.log(typeof otp);
+    //   const verifyOtp = {
+    //     valid: otp == 123456 ? true : false,
+    //   };
+    //   if (verifyOtp && verifyOtp.valid) {
+    //     const token = createJwtToken({ userId: user._id }, "1h");
+
+    //     return res.status(200).json({
+    //       success: true,
+    //       status: 200,
+    //       data: {
+    //         token,
+    //       },
+    //       message: "Otp verified",
+    //     });
+    //   } else {
+    //     return res.status(200).json({
+    //       success: false,
+    //       status: 203,
+    //       message: "Invalid OTP",
+    //     });
+    //   }
+    // }
+    if (type === "EMAIL") {
+      if (user.otp == otp) {
         const token = createJwtToken({ userId: user._id }, "1h");
 
         return res.status(200).json({
@@ -465,6 +529,9 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
         });
       }
     }
+    // if(type==="PHONE"){
+
+    // }
   } catch (error: any) {
     return res.status(500).json({
       status: 500,
@@ -571,4 +638,4 @@ export const setAvatarProfilePicture = async (req: Request, res: Response) => {
   }
 };
 
-// export const saveTimeZoneForUser = async 
+// export const saveTimeZoneForUser = async

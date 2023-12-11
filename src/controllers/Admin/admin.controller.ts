@@ -106,7 +106,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
-      //   { phone: { $regex: parseInt(search), $options: "i" } },
+        // { phone: { $regex:parseInt(search.toString()), } },
     ];
   }
   if (isAdmin && isAdmin === "0" && !role) {

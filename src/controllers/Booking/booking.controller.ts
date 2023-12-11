@@ -364,6 +364,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
           localField: "expert",
           foreignField: "_id",
           as: "expert",
+          // pipeline:[{$project:{otp:-1}}]
         },
       },
       {

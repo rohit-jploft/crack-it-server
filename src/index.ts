@@ -28,6 +28,7 @@ import {
 } from "./controllers/Wallet/wallet.controller";
 import {
   makeStatusFromConfirmedToCompleted,
+  markChatClosedAfterTheMeeting,
   startChatForConfirmedBookingBefore15Min,
 } from "./scheduler/bookingScheduler";
 import { sendNotification } from "./helper/notifications";
@@ -38,6 +39,7 @@ import { createConversation } from "./controllers/Chat/chat.controller";
 import User from "./models/user.model";
 import Booking from "./models/booking.model";
 import { getExpertRating } from "./controllers/Rating/rating.controller";
+import { sendEmailfromSmtp } from "./helper/mailService";
 //dot env
 dotenv.config();
 
@@ -98,6 +100,7 @@ app.use("/", router);
 
 schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted);
 schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min);
+schedule.scheduleJob("* * * * *", markChatClosedAfterTheMeeting);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {
@@ -204,9 +207,9 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
-    console.log(await getExpertRating("6565c50341468cf6dc072a1f"), "rating")
     // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
-
+    // const email = await sendEmailfromSmtp("rohitdeshmukh@gmail.com", "RESET PASSWORD", "Your OTP is 12354")
+    // console.log(email);
     console.log("database connected");
   } catch (error) {
     console.log(error);

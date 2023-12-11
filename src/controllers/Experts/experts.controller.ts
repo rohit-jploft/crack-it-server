@@ -71,8 +71,9 @@ export const getExpertProfile = async (req: Request, res: Response) => {
         "firstName lastName email phone countryCode isExpertProfileVerified profilePhoto"
       )
       .populate("expertise", "title")
+      .populate("agency", "-password")
       .populate("jobCategory", "title");
-    const rating = await getExpertRating(userId.toString());
+    const rating:any = await getExpertRating(userId.toString());
     return res.status(200).json({
       status: 200,
       success: true,
@@ -166,6 +167,8 @@ export const getAllExpertBasedOnSearch = async (
             agency: { $exists: true },
           },
         });
+       
+
       }
       if (typeOfExpert[0] === "EXPERT") {
         pipeline.push({
@@ -204,7 +207,31 @@ export const getAllExpertBasedOnSearch = async (
       });
     }
     
-
+    pipeline.push({
+      $lookup: {
+        from: "users", // Assuming the collection name is 'users'
+        localField: "agency",
+        foreignField: "_id",
+        as: "agency",
+        pipeline: [
+          {
+            $project: {
+              agencyName:1,
+              profilePhoto:1,
+              role:1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    });
+    pipeline.push({
+      $unwind: {
+        path: "$agency",
+        preserveNullAndEmptyArrays: true,
+        
+      },
+    });
     pipeline.push({
       $lookup: {
         from: "users", // Assuming the collection name is 'users'
@@ -219,6 +246,7 @@ export const getAllExpertBasedOnSearch = async (
               phone: 1,
               countryCode: 1,
               profilePhoto:1,
+              agency:1,
               email: 1,
             },
           },
@@ -273,7 +301,7 @@ export const getAllExpertBasedOnSearch = async (
         const rating = await getExpertRating(expert.user._id.toString());
         return {
           ...expert,
-          rating: rating.toFixed(1),
+          rating: rating,
         };
       })
     );
