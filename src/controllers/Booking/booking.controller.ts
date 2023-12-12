@@ -437,16 +437,16 @@ export const getAllBooking = async (req: Request, res: Response) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-
+      {
+        $sort: { createdAt: -1 },
+      },
       {
         $skip: skip,
       },
       {
         $limit: limit,
       },
-      {
-        $sort: { createdAt: -1 },
-      },
+     
     ];
 
     const bookings = await Booking.aggregate([...aggregatePipeline]);

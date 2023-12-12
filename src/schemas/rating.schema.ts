@@ -5,7 +5,7 @@ const expertRatingSchema = Joi.object({
   expert: Joi.string().required(), // Assuming 'expert' and 'ratedBy' are strings in Joi
   bookingId: Joi.string().required(), // Assuming 'expert' and 'ratedBy' are strings in Joi
   ratedBy: Joi.string().required(),
-  comment: Joi.string().allow("").default(''), // Assuming 'comment' is a string in Joi
+  comment: Joi.string().allow(""), // Assuming 'comment' is a string in Joi
 })
 
 export default expertRatingSchema;
