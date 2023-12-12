@@ -16,7 +16,7 @@ const sendVerification = async (
 ): Promise<string> => {
   const verification = await client.verify.v2
     .services(TWILIO_VERIFICATION_SERVICE_SID)
-    .verifications.create({ to: `${countryCode}${number}`, channel: "sms" });
+    .verifications.create({ to: `+${number}`, channel: "sms" });
   console.log(verification);
   return verification.status;
 };

@@ -83,7 +83,7 @@ export const getUsersConversation = async (req: Request, res: Response) => {
       .populate("participants", "firstName lastName role profilePhoto")
       .populate("admin", "firstName lastName role")
       .populate("superAdmin", "firstName lastName role")
-      .populate("agency", "agencyName role");
+      .populate("agency", "agencyName role").sort({createdAt:-1});
     const finalList = await Promise.all(
       chatConvo.map(async (chat: any) => {
         // const rating = await getExpertRating(expert.user._id.toString());

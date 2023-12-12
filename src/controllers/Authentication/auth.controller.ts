@@ -398,9 +398,9 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
   const { mobile, email, type, countryCode } = req.body;
   try {
     let query: any = {};
-    if (type === "EMAIL") {
+    if (type === "EMAIL" && email) {
       query.email = { $regex: email, $options: "i" };
-    } else if (type === "PHONE") {
+    } else if (type === "PHONE" && mobile) {
       query.phone = mobile;
     }
     const checkUser = await User.findOne({
@@ -424,7 +424,7 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
         "RESET PASSWORD",
         `Dear ${
           checkUser && checkUser?.firstName
-            ? checkUser.firstName
+            ? checkUser.firstName + " " + checkUser?.lastName
             : checkUser.agencyName
         },
 
@@ -443,15 +443,24 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
         message: "Otp sent successfully on your registered mail id",
       });
     }
-    if (mobile && countryCode) {
+    if (mobile && type === "PHONE") {
       // const
-      // const sendSms = await sendVerification(mobile, countryCode);
+      const sendSms = await sendVerification(mobile, countryCode ? countryCode : null);
       // if (sendSms) console.log(sendSms);
-      return res.status(200).json({
-        success: true,
-        status: 200,
-        message: "Otp sent successfully",
-      });
+      // check in response object whenver you will recieve the twilio credentials
+      if (sendSms) {
+        return res.status(200).json({
+          success: true,
+          status: 200,
+          message: "Otp sent successfully",
+        });
+      } else {
+        return res.status(203).json({
+          success: false,
+          status: 203,
+          message: "Sending Sms failed",
+        });
+      }
     }
   } catch (error: any) {
     return res.status(500).json({
@@ -471,11 +480,10 @@ export const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
       query.email = email;
     } else {
       query.phone = mobile;
-      query.countryCode= countryCode;
+      query.countryCode = countryCode;
     }
     const user = await User.findOne({
-     ...query
-      
+      ...query,
     });
     if (!user) {
       return res.status(200).json({

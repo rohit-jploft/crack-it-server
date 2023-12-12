@@ -93,36 +93,34 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
   var query = <any>{};
   if (role && role !== "AGENCY-EXPERT") {
-    query.role = role.toString()
-    query.agency = {$exists:false}
-  };
+    query.role = role.toString();
+    query.agency = { $exists: false };
+  }
   if (role === "AGENCY-EXPERT") {
     // query.role = "EXPERT"
-    query.agency ={$exists:true}
-    
+    query.agency = { $exists: true };
   }
   if (search) {
     query.$or = [
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
-        // { phone: { $regex:parseInt(search.toString()), } },
+      { phone: { $regex: search, $options: "i" } },
     ];
   }
   if (isAdmin && isAdmin === "0" && !role) {
     query.role = { $in: [Roles.USER, Roles.EXPERT] };
   }
   if (isAdmin && isAdmin === "0" && role) {
-    
     if (role === "AGENCY-EXPERT") {
-        query.role = "EXPERT"
+      query.role = "EXPERT";
     } else {
       query.role = { $in: [role.toString()] };
     }
   }
 
   try {
-    console.log("query ", query)
+    console.log("query ", query);
     const users = await User.find(query, { password: 0 })
       .skip(skip)
       .limit(limit)
