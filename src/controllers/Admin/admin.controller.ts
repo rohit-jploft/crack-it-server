@@ -105,7 +105,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       { firstName: { $regex: search, $options: "i" } },
       { lastName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
-      { phone: { $regex: search, $options: "i" } },
+      // { phone: { $regex: search, $options: "i" } },
     ];
   }
   if (isAdmin && isAdmin === "0" && !role) {
@@ -120,13 +120,11 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 
   try {
-    console.log("query ", query);
     const users = await User.find(query, { password: 0 })
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
     const totalCount = await User.countDocuments(query);
-    console.log(totalCount);
     return res.status(200).json({
       success: true,
       status: 200,

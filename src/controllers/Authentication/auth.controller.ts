@@ -433,7 +433,7 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
       This OTP will expire in 15 Min. Please do not share it with anyone for security reasons.
       
       Thank you,
-      Crack-IT`
+      Crack-IT`, {otp:newOtp}
       );
       checkUser.otp = newOtp;
       await checkUser.save();
