@@ -438,7 +438,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
         },
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { startTime: -1 },
       },
       {
         $skip: skip,

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config(); // Load environment variables from .env file
 
@@ -12,26 +13,23 @@ const transporter = nodemailer.createTransport({
     user: process.env.MAIL_USERNAME,
     pass: process.env.MAIL_PASSWORD,
   },
-  authMethod: 'PLAIN',
+  authMethod: "PLAIN",
 });
-
 
 export const sendEmailfromSmtp = async (
   recipient: string,
   subject: string,
   body?: string,
-  data?:any
+  data?: any
 ) => {
   const mailOptions: nodemailer.SendMailOptions = {
     from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
     to: recipient, // Replace with the recipient's email address
     subject: subject,
     text: body,
-    html:`
-    <html>
+    html: `<html>
     <head>
         <style>
-            /* Add CSS styles for your email */
             body {
                 font-family: Arial, sans-serif;
                 background-color: #f4f4f4;
@@ -72,33 +70,15 @@ export const sendEmailfromSmtp = async (
             </div>
         </div>
     </body>
-    </html>
-`
+    </html>`,
   };
   var res: any = {};
-  // Send email
-  //   const emailResponse =  transporter.sendMail(mailOptions, (error, info) => {
-  //     if (error) {
-  //       console.error("Error occurred while sending email:", error.message);
-  //       res.success =  false;
-  //       res.error =  error.message;
-  //       console.log("hello")
-  //       return true
-  //     } else {
-  //       console.log("Email sent successfully!");
-  //       console.log("Message ID:", info.messageId);
-  //         res.success = true;
-  //         res.error = null;
-  //         return false
-  //     }
-  //   });..
   const emailResponse = await transporter.sendMail(mailOptions);
   console.log(emailResponse, "res");
   if (emailResponse && emailResponse.messageId) {
     return { success: true, error: null };
   } else {
-    return {success:false, error:"Something went wrong"}
+    return { success: false, error: "Something went wrong" };
   }
-
 };
 // Email content

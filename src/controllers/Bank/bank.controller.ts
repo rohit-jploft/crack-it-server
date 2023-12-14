@@ -60,3 +60,27 @@ export const getAllBankDetailsByUser = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const deleteBankOrUpi = async (req: Request, res: Response) => {
+  const { bankId } = req.params;
+  try {
+    const bankUpdate = await Bank.updateOne(
+      {
+        _id: ObjectId(bankId.toString()),
+      },
+      { isDeleted: true }
+    );
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Bank has been deleted successfully",
+    });
+  } catch (error:any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};

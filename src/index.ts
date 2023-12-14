@@ -40,6 +40,7 @@ import User from "./models/user.model";
 import Booking from "./models/booking.model";
 import { getExpertRating } from "./controllers/Rating/rating.controller";
 import { sendEmailfromSmtp } from "./helper/mailService";
+import Notification from "./models/notifications.model";
 //dot env
 dotenv.config();
 
@@ -207,6 +208,7 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
+    // await Notification.updateMany({}, {isRead:true})
     // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
     // const email = await sendEmailfromSmtp("rohitdeshmukh@gmail.com", "RESET PASSWORD", "Your OTP is 12354")
     // console.log(email);
