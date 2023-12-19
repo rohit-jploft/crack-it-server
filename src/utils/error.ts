@@ -9,5 +9,5 @@ export const JWT_DECODE_ERR: string = "incorrect token";
 export const USER_NOT_FOUND_ERR: string = "User not found";
 export const PHONE_NOT_FOUND_ERR: string = "Phone number not found";
 export const ACCESS_DENIED_ERR: string = "Access deny for normal user";
-export const INVALID_OTP: string = "Invalid Otp";
+export const INVALID_OTP: string = "Invalid OTP";
 export const INCORRECT_PASSWORD: string = "Incorrect Password";

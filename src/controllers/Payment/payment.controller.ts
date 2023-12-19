@@ -126,42 +126,64 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const payThroughWallet = async (req: Request, res: Response) => {
   const { bookingId, amount, userId } = req.body;
-  const data:any = req.body;
+  const data: any = req.body;
 
-    // Validate the request data using Joi schema
-    const { value, error } = payWithWallet.validate(data);
+  // Validate the request data using Joi schema
+  const { value, error } = payWithWallet.validate(data);
 
-    // Return if there's a validation error
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        status: 400,
-        message: error.message,
-      });
-    }
+  // Return if there's a validation error
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      message: error.message,
+    });
+  }
   try {
-    const booking:any = await Booking.findById(ObjectId(bookingId));
-    if(booking.status === "CONFIRMED"){
-        return res.status(200).json({
-          success:false,
-          status:200,
-          type:'error',
-          message:"Payment has been already done"
-        })
+    const booking: any = await Booking.findById(ObjectId(bookingId));
+    if (booking.status === "CONFIRMED") {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        type: "error",
+        message: "Payment has been already done",
+      });
     }
     const checkWallet: any = await Wallet.findOne({
       user: ObjectId(userId.toString()),
     });
     if (parseFloat(amount) > checkWallet.amount) {
-      return res.status(200).json({
-        status: 200,
-        success: false,
-        type: "error",
-        message: "Insufficient balance",
+      const { amount, meetingId } = req.body;
+      const remainingAmount = parseFloat(amount) - checkWallet.amount;
+
+      const lineItems = [
+        {
+          price_data: {
+            currency: "USD",
+            product_data: {
+              name: "Booking",
+              images: [],
+            },
+            unit_amount: parseFloat(remainingAmount.toString()) * 100,
+          },
+          quantity: 1,
+        },
+      ];
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        mode: "payment",
+        success_url: "https://crack-it-website.netlify.app/check-payment",
+        cancel_url: "http://crack-it-website.netlify.app/mybookings/Requested",
       });
+      // return res.status(200).json({
+      //   status: 200,
+      //   success: false,
+      //   type: "error",
+      //   message: "Insufficient balance",
+      // });
     } else {
       const superAdminId = await getSuperAdminId();
       const transaction = await createTransaction(
@@ -182,8 +204,8 @@ export const payThroughWallet = async (req: Request, res: Response) => {
         booking.status = "CONFIRMED";
         payment.status = "PAID";
         payment.paymentObj = {
-          method:"WALLET",
-          transaction:transaction
+          method: "WALLET",
+          transaction: transaction,
         };
         await booking.save();
         await payment.save();

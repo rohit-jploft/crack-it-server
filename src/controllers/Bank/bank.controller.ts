@@ -16,7 +16,9 @@ export const createBankDetails = async (req: Request, res: Response) => {
         message: error.message,
       });
     }
-
+    if(value && value.type==="UPI"){
+        const update = await Bank.updateOne({type:"UPI", upiId:value?.upiId, user:value?.user}, {isDeleted:false})
+    }
     const bank = new Bank(value);
     await bank.save();
     return res.status(200).json({
