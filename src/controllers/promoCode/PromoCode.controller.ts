@@ -237,24 +237,44 @@ export const validatePromoCode = async (req: Request, res: Response) => {
   try {
     const { promoCode, bookingId } = req.body;
 
-    const getPromoCode = await PromoCode.findOne({
+    const getPromoCode:any = await PromoCode.findOne({
       isActive: true,
       code: promoCode,
-      expirationDate: { $lte: new Date() },
+      expirationDate: { $gte: new Date() },
     });
-    console.log(getPromoCode, "code object from db");
+    const getPromoCodeWithOut:any = await PromoCode.findOne({
+      isActive: true,
+      code: promoCode,
+    });
+    if(!getPromoCode && getPromoCodeWithOut && getPromoCodeWithOut.expirationDate < new Date()){
+      return res.status(200).json({
+        success: false,
+        type:'error',
+        message: "Promo code is expired",
+       
+      })
+    }
+
     if (getPromoCode) {
       const bookingPayment: any = await BookingPayment.findOne({
         booking: ObjectId(bookingId),
       });
-      console.log(bookingPayment)
-      if (bookingPayment && bookingPayment.promoCode ===null) {
+      console.log(bookingPayment);
+      if (bookingPayment && bookingPayment.promoCode === null) {
         let discount;
         discount =
           getPromoCode.type === "FLAT"
             ? getPromoCode.flatAmount
             : (getPromoCode.discountPercentage * bookingPayment?.grandTotal) /
               100;
+
+        if(discount > bookingPayment.grandTotal){
+          return res.status(200).json({
+            success: false,
+            type: "error",
+            message: "Promo code is Invalid for this booking",
+          });
+        }
 
         bookingPayment.grandTotal = bookingPayment.grandTotal - discount;
         bookingPayment.discountAmount = discount;
@@ -300,6 +320,7 @@ export const removePromoCode = async (req: Request, res: Response) => {
     const bookingPayment: any = await BookingPayment.findOne({
       booking: ObjectId(bookingId),
     });
+    
 
     if (bookingPayment && bookingPayment.promoCode) {
       let discount = bookingPayment.discountAmount;

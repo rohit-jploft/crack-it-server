@@ -56,7 +56,8 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
   return res.status(200).json({ id: session.id, bookingId: meetingId });
 };
 export const checkAndVerifyPayment = async (req: Request, res: Response) => {
-  const { type, id, bookingId } = req.body;
+  const { type, id, bookingId, walletTransactionId } = req.body;
+  console.log(walletTransactionId, "walletTransactionId");
   try {
     const checkIntent =
       type === "session"
@@ -73,7 +74,13 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
 
       booking.status = "CONFIRMED";
       payment.status = "PAID";
-      payment.paymentObj = checkIntent;
+      if (walletTransactionId) {
+        console.log("wallet id ");
+        payment.paymentObj = { walletTransactionId, payment: checkIntent };
+      } else {
+        console.log("no wallet id ");
+        payment.paymentObj = checkIntent;
+      }
       await booking.save();
       await payment.save();
       await createNotification(
@@ -102,7 +109,13 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
 
       booking.status = "CONFIRMED";
       payment.status = "PAID";
-      payment.paymentObj = checkIntent;
+      if (walletTransactionId) {
+        console.log("wallet id ");
+        payment.paymentObj = { walletTransactionId, payment: checkIntent };
+      } else {
+        console.log("no wallet id ");
+        payment.paymentObj = checkIntent;
+      }
       await booking.save();
       await payment.save();
       return res.status(200).json({
@@ -154,36 +167,196 @@ export const payThroughWallet = async (req: Request, res: Response) => {
     const checkWallet: any = await Wallet.findOne({
       user: ObjectId(userId.toString()),
     });
-    if (parseFloat(amount) > checkWallet.amount) {
-      const { amount, meetingId } = req.body;
-      const remainingAmount = parseFloat(amount) - checkWallet.amount;
-
-      const lineItems = [
-        {
-          price_data: {
-            currency: "USD",
-            product_data: {
-              name: "Booking",
-              images: [],
-            },
-            unit_amount: parseFloat(remainingAmount.toString()) * 100,
-          },
-          quantity: 1,
-        },
-      ];
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        line_items: lineItems,
-        mode: "payment",
-        success_url: "https://crack-it-website.netlify.app/check-payment",
-        cancel_url: "http://crack-it-website.netlify.app/mybookings/Requested",
+    if (checkWallet && checkWallet.amount == 0) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        type: "error",
+        message:
+          "You have no balance in your wallet !!! Please choose any other payment method",
       });
-      // return res.status(200).json({
-      //   status: 200,
-      //   success: false,
-      //   type: "error",
-      //   message: "Insufficient balance",
-      // });
+    }
+    if (parseFloat(amount) > checkWallet.amount) {
+      const superAdminId = await getSuperAdminId();
+      const transaction = await createTransaction(
+        checkWallet.amount,
+        "DEBIT",
+        userId,
+        superAdminId,
+        "Booking payment"
+      );
+      // const transaction = {
+      //   userTransaction:{
+      //     _id:"hju"
+      //   },
+      //   type:"error",
+      //   message:"hello"
+      // }
+      if (transaction && transaction.userTransaction) {
+        const remainingAmount = parseFloat(amount) - checkWallet.amount;
+        console.log(remainingAmount, "remaining amount");
+        console.log(typeof remainingAmount, "type");
+        const lineItems = [
+          {
+            price_data: {
+              currency: "USD",
+              product_data: {
+                name: "Booking",
+                images: [],
+              },
+              unit_amount: remainingAmount * 100,
+            },
+            quantity: 1,
+          },
+        ];
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: lineItems,
+          success_url: "https://crack-it-website.netlify.app/check-payment",
+          cancel_url:
+            "http://crack-it-website.netlify.app/mybookings/Requested",
+          mode: "payment",
+        });
+        if (session && session?.id) {
+          return res.status(200).json({
+            status: 200,
+            success: true,
+            type: "success",
+            data: {
+              id: session.id,
+              bookingId: bookingId,
+              walletTransactionId: transaction.userTransaction._id,
+            },
+          });
+        }
+      } else {
+        return res.status(200).json({
+          status: 200,
+          success: false,
+          type: transaction.type,
+          message: transaction.message,
+        });
+      }
+    } else {
+      const superAdminId = await getSuperAdminId();
+      const transaction = await createTransaction(
+        amount,
+        "DEBIT",
+        userId,
+        superAdminId,
+        "Booking payment"
+      );
+      if (transaction) {
+        const booking: any = await Booking.findById(
+          ObjectId(bookingId.toString())
+        );
+        var payment: any = await BookingPayment.findOne({
+          booking: ObjectId(bookingId.toString()),
+        });
+
+        booking.status = "CONFIRMED";
+        payment.status = "PAID";
+        payment.paymentObj = {
+          method: "WALLET",
+          transaction: transaction,
+        };
+        await booking.save();
+        await payment.save();
+        return res.status(200).json({
+          success: true,
+          status: 200,
+          data: payment,
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        type: "success",
+        data: transaction,
+      });
+    }
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const payThroughWalletMobileApi = async (
+  req: Request,
+  res: Response
+) => {
+  const { bookingId, amount, userId } = req.body;
+  const data: any = req.body;
+
+  // Validate the request data using Joi schema
+  const { value, error } = payWithWallet.validate(data);
+
+  // Return if there's a validation error
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      message: error.message,
+    });
+  }
+  try {
+    const booking: any = await Booking.findById(ObjectId(bookingId));
+    if (booking.status === "CONFIRMED") {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        type: "error",
+        message: "Payment has been already done",
+      });
+    }
+    const checkWallet: any = await Wallet.findOne({
+      user: ObjectId(userId.toString()),
+    });
+    if (checkWallet && checkWallet.amount == 0) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        type: "error",
+        message:
+          "You have no balance in your wallet !!! Please choose any other payment method",
+      });
+    }
+    if (parseFloat(amount) > checkWallet.amount) {
+      const superAdminId = await getSuperAdminId();
+      const transaction = await createTransaction(
+        checkWallet.amount,
+        "DEBIT",
+        userId,
+        superAdminId,
+        "Booking payment"
+      );
+      if (transaction && transaction.userTransaction) {
+        const remainingAmount = parseFloat(amount) - checkWallet.amount;
+        console.log(remainingAmount, "remaining amount");
+        console.log(typeof remainingAmount, "type");
+
+        return res.status(200).json({
+          status: 200,
+          success: true,
+          type: "success",
+          data: {
+            remainingAmount,
+            bookingId: bookingId,
+            walletTransactionId: transaction.userTransaction._id,
+          },
+        });
+      } else {
+        return res.status(200).json({
+          status: 200,
+          success: false,
+          type: transaction.type,
+          message: transaction.message,
+        });
+      }
     } else {
       const superAdminId = await getSuperAdminId();
       const transaction = await createTransaction(

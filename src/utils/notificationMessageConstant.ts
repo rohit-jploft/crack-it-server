@@ -1,7 +1,7 @@
 export const NoticationMessage = {
   BookingRequest: {
     title: "New Booking",
-    message: "You recieved new booking request",
+    message: "You received new booking request",
   },
   BookingAccept: {
     title: "Booking Accepted",
@@ -29,6 +29,6 @@ export const NoticationMessage = {
   },
   newMessage:{
     title:"New Message",
-    message:"You have a recieved new message"
+    message:"You have a received new message"
   }
 };

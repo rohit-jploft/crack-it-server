@@ -15,7 +15,7 @@ import {
 import { createJwtToken } from "../../utils/token.util";
 import { ObjectId } from "../../helper/RequestHelper";
 import { createWallet } from "../Wallet/wallet.controller";
-import { checkVerification, sendVerification } from "../../helper/smsService";
+// import { checkVerification, sendVerification } from "../../helper/smsService";
 import Expert from "../../models/experts.model";
 import { Roles } from "../../utils/role";
 import { existsSync, unlinkSync } from "fs";
@@ -38,17 +38,30 @@ export const createNewUser = async (req: Request, res: Response) => {
     });
   }
   // check user exists or not
-  const IsUserExist = await User.findOne({
-    $or: [{ email: value.email.toLowerCase() }, { phone: value.phone }],
-  });
+  const userWithEmail = await User.findOne({ email: value.email.toLowerCase() });
+  const userWithPhone = await User.findOne({ phone: value.phone });
 
   // if user exists
-  if (IsUserExist) {
+  if (userWithEmail && userWithPhone) {
     return res.status(200).json({
       status: 200,
       success: false,
       type: "error",
-      message: USER_ALREADY_EXISTS,
+      message: "Both email and phone already exist",
+    });
+  } else if (userWithEmail) {
+    return res.status(200).json({
+      status: 200,
+      success: false,
+      type: "error",
+      message: "Email already exists",
+    });
+  } else if (userWithPhone) {
+    return res.status(200).json({
+      status: 200,
+      success: false,
+      type: "error",
+      message: "Phone already exists",
     });
   } else {
     // if user does not exist in our database
@@ -444,8 +457,9 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
       });
     }
     if (mobile && type === "PHONE") {
-      // const
-      const sendSms = await sendVerification(mobile, countryCode ? countryCode : null);
+      // const\
+      let sendSms;
+      // const sendSms = await sendVerification(mobile, countryCode ? countryCode : null);
       // if (sendSms) console.log(sendSms);
       // check in response object whenver you will recieve the twilio credentials
       if (sendSms) {

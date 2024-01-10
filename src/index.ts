@@ -41,6 +41,7 @@ import Booking from "./models/booking.model";
 import { getExpertRating } from "./controllers/Rating/rating.controller";
 import { sendEmailfromSmtp } from "./helper/mailService";
 import Notification from "./models/notifications.model";
+import Message from "./models/message.model";
 //dot env
 dotenv.config();
 

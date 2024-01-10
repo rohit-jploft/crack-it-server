@@ -64,7 +64,8 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       default:Roles.USER,
     },
     profilePhoto:{
-      type:String
+      type:String,
+      default:""
     },
     webDeviceToken:{
         type:String

@@ -17,15 +17,30 @@ export const getDashboardData = async (req: Request, res: Response) => {
     const pipeline = [
       {
         $match: {
-          status: "PAID", // Match documents with the "PAID" status
+          status: "PAID",
+        },
+      },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "booking",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      {
+        $unwind: "$booking",
+      },
+      {
+        $match: {
+          // "booking.status":"COMPLETED"
+          "booking.status": { $in: ["COMPLETED", "CONFIRMED"] },
         },
       },
       {
         $group: {
-          _id: null, // Group all matching documents together
-          totalCommission: {
-            $sum: "$CommissionAmount", // Calculate the sum of CommissionAmount
-          },
+          _id: null,
+          totalCommission: { $sum: "$grandTotal" },
         },
       },
     ];
@@ -36,12 +51,12 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     // Extract the total commission from the result
     const totalEarning = result[0]?.totalCommission || 0;
-    console.log({
-      totalUser,
-      totalExpert,
-      totalEarning,
-      totalMeetingCompleted,
-    });
+    // console.log({
+    //   totalUser,
+    //   totalExpert,
+    //   totalEarning,
+    //   totalMeetingCompleted,
+    // });
     return res.status(200).json({
       success: true,
       status: 200,
@@ -147,6 +162,24 @@ export const getPaymentPageStats = async (req: Request, res: Response) => {
     // Calculate the total revenue
     const totalRevenueResult = await BookingPayment.aggregate([
       {
+        $lookup: {
+          from: "bookings",
+          localField: "booking",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      {
+        $unwind: "$booking",
+      },
+      {
+        $match: {
+          "booking.status": {
+            $in: ["REQUESTED", "CONFIRMED", "COMPLETED", "ACCEPTED"],
+          },
+        },
+      },
+      {
         $group: {
           _id: null,
           totalRevenue: { $sum: "$grandTotal" },
@@ -159,6 +192,22 @@ export const getPaymentPageStats = async (req: Request, res: Response) => {
       {
         $match: {
           status: "PAID",
+        },
+      },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "booking",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      {
+        $unwind: "$booking",
+      },
+      {
+        $match: {
+          "booking.status": "CONFIRMED",
         },
       },
       {
@@ -177,9 +226,57 @@ export const getPaymentPageStats = async (req: Request, res: Response) => {
         },
       },
       {
+        $lookup: {
+          from: "bookings",
+          localField: "booking",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      {
+        $unwind: "$booking",
+      },
+      {
+        $match: {
+          "booking.status": {
+            $in: ["REQUESTED", "ACCEPTED"],
+          },
+        },
+      },
+      {
         $group: {
           _id: null,
           unrealizedCommission: { $sum: "$CommissionAmount" },
+        },
+      },
+    ]);
+    const totalEarningResult = await BookingPayment.aggregate([
+      {
+        $match: {
+          status: "PAID",
+        },
+      },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "booking",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      {
+        $unwind: "$booking",
+      },
+      {
+        $match: {
+          // "booking.status":"COMPLETED"
+          "booking.status": { $in: ["COMPLETED", "CONFIRMED"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          unrealizedCommission: { $sum: "$grandTotal" },
         },
       },
     ]);
@@ -191,8 +288,7 @@ export const getPaymentPageStats = async (req: Request, res: Response) => {
       unrealizedCommission:
         unrealizedCommissionResult[0]?.unrealizedCommission || 0,
     };
-    response.totalEarning =
-      response.realizedCommission + response.unrealizedCommission;
+    response.totalEarning = totalEarningResult[0]?.unrealizedCommission || 0;
 
     return res.status(200).json({
       success: true,

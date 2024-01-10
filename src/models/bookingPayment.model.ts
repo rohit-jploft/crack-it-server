@@ -38,6 +38,7 @@ const bookingPaymentSchema: Schema<BookingPaymentDocument> =
       promoCode: {
         type: Schema.Types.ObjectId,
         ref: "PromoCode",
+        default:null
       },
       paymentObj:{
         type:Object

@@ -189,6 +189,7 @@ export const addNewAgencyExpert = async (req: Request, res: Response) => {
   console.log(data);
   console.log(req?.files);
 
+
   if (req.files) {
     var { profilePic }: any = req?.files;
     if (!profilePic) {
