@@ -124,3 +124,17 @@ export const markChatClosedAfterTheMeeting = async () => {
     );
   }
 };
+
+// requested/ accepted meeting will be cancelled if these are not confirmed till the endTime of the meeting
+export const cancelReqAcceptedToCancelled = async () => {
+  try {
+    const todayDate = new Date();
+    const getBooking = await Booking.find({
+      status: { $in: ["REQUESTED", "ACCEPTED"] },
+      endTime: { $gt: new Date(todayDate.getTime()) },
+    });
+    return getBooking;
+  } catch (error) {
+    return error;
+  }
+};

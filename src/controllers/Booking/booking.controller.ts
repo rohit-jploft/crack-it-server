@@ -34,6 +34,7 @@ import {
 import Wallet from "../../models/wallet.model";
 import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
 import Category from "../../models/category.model";
+import User from "../../models/user.model";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -760,6 +761,76 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
       status: 200,
       data: finalRes,
       message: "Booking detail fetched successfully",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+export const bookingPageDashboard = async (req: Request, res: Response) => {
+  try {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // new users joined in the current month
+    const newUsers = await User.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+    //current month
+    const totalMeeting = await Booking.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    const now = new Date();
+    let resArr: any = [];
+    for (let i = 0; i < 6; i++) {
+      const currentMonth = now.getMonth() - i;
+      const startOfMonth = new Date(
+        now.getFullYear(),
+        currentMonth,
+        1,
+        0,
+        0,
+        0
+      );
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        currentMonth + 1,
+        0,
+        23,
+        59,
+        59
+      );
+
+      const count = await Booking.countDocuments({
+        createdAt: { $gt: startOfMonth, $lte: endOfMonth },
+      });
+
+
+      let data = {
+        month: currentMonth + 1 > 0 ? currentMonth + 1 : currentMonth + 1 + 12,
+        year: startOfMonth.getFullYear(),
+        count,
+      };
+
+      resArr.push(data);
+    }
+    const totalExperts = await User.countDocuments({ role: Roles.EXPERT });
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: {
+        totalUser: newUsers,
+        totalMeeting,
+        monthlyMeetings: resArr,
+        totalExperts,
+      },
+      message: "Dashboard data fetched successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

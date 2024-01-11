@@ -36,13 +36,15 @@ export const createTransaction = async (
   user: Types.ObjectId,
   otherUser: Types.ObjectId,
   title: string,
-  txnType?: string
+  txnType?: string,
+  success?: boolean
 ) => {
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
     if (!Types.ObjectId.isValid(user) || !Types.ObjectId.isValid(otherUser)) {
       return { type: "error", message: "Invalid IDs" };
     }
+
     var otherUserWallet;
     // Check the user's wallet balance
     const userWallet = await Wallet.findOne({ user });
@@ -111,6 +113,57 @@ export const createTransaction = async (
     return { message: "Server error", type: "error" };
   }
 };
+export const createStripeTransaction = async (
+  bookingId: Types.ObjectId,
+  amount: number,
+  type: "CREDIT" | "DEBIT",
+  user: Types.ObjectId,
+  otherUser: Types.ObjectId,
+  title: string,
+  // paymentMethod: "WALLET" | "CARD",
+  success: "success" | "failed" | "pending"
+) => {
+  // Ensure that user and otherUser exist and are valid ObjectId strings
+  if (!Types.ObjectId.isValid(user)) {
+    return { type: "error", message: "Invalid IDs" };
+  }
+
+  // Check the user's wallet balance
+  const userWallet = await Wallet.findOne({ user });
+
+  if (!userWallet) {
+    return { type: "error", message: "User wallet not found" };
+  }
+  const superAdminId = await getSuperAdminId();
+  const adminSideTrans = new WalletTransaction({
+    title: title,
+    paymentMethod: "CARD",
+    user: superAdminId,
+    booking: bookingId,
+    otherUser: ObjectId(user.toString()),
+    amount: amount,
+    type: "CREDIT",
+  });
+  await adminSideTrans.save();
+  const newTrans = new WalletTransaction({
+    title: title,
+    paymentMethod: "CARD",
+    booking: bookingId,
+    user: ObjectId(user.toString()),
+    otherUser: superAdminId,
+    amount: amount,
+    type: "DEBIT",
+  });
+  await newTrans.save();
+  return {
+    type: "success",
+    message: "transactions are successfull",
+    data: {
+      userTransaction: newTrans,
+      superAdminTransaction: adminSideTrans,
+    },
+  };
+};
 export const getUsersTransaction = async (req: Request, res: Response) => {
   const currentPage = Number(req?.query?.page) + 1 || 1;
 
@@ -136,11 +189,13 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
       .populate("otherUser", "firstName lastName")
       .sort({ createdAt: -1 });
 
-      console.log(transactions, "transactions")
+    console.log(transactions, "transactions");
     const wallet = await createWallet(userId);
-    console.log(wallet, "wallet")
-    const totalCount: any = await WalletTransaction.countDocuments({ user: ObjectId(userId) });
-    console.log(totalCount, "totalCount")
+    console.log(wallet, "wallet");
+    const totalCount: any = await WalletTransaction.countDocuments({
+      user: ObjectId(userId),
+    });
+    console.log(totalCount, "totalCount");
 
     res.status(200).json({
       success: true,
@@ -181,7 +236,6 @@ export const getUserWallet = async (req: Request, res: Response) => {
     });
   }
 };
-
 // withdrawal request apis
 export const createWithdrawRequest = async (req: Request, res: Response) => {
   let data = req.body;
@@ -322,7 +376,6 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const payWithWallet = async (req: Request, res: Response) => {
   const { bookingId, userId } = req.body;
   const superAdminId = await getSuperAdminId();

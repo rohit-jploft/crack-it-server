@@ -27,6 +27,7 @@ import {
   createWallet,
 } from "./controllers/Wallet/wallet.controller";
 import {
+  cancelReqAcceptedToCancelled,
   makeStatusFromConfirmedToCompleted,
   markChatClosedAfterTheMeeting,
   startChatForConfirmedBookingBefore15Min,
@@ -103,6 +104,7 @@ app.use("/", router);
 schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted);
 schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min);
 schedule.scheduleJob("* * * * *", markChatClosedAfterTheMeeting);
+schedule.scheduleJob("* * * * *", cancelReqAcceptedToCancelled);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {
@@ -178,7 +180,7 @@ io.on("connection", (socket) => {
     if (chatData && chatData?.admin) {
       const adminUser = getUser(chatData?.admin);
     }
-    console.log(chat, "chatId");   
+    console.log(chat, "chatId");
     socket.to(chat).emit("getMessage", {
       sender: sender,
       message: content,

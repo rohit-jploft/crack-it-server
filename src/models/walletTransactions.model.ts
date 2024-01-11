@@ -3,9 +3,12 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 export interface WalletTransactionData {
   amount: number;
   type: "CREDIT" | "DEBIT";
-  status: 'pending' | 'success' | 'failed';
+  paymentMethod: "WALLET" | "CARD";
+  paymentObj: Object;
+  status: "pending" | "success" | "failed";
   user: Types.ObjectId;
-  title:string;
+  booking: Types.ObjectId;
+  title: string;
   otherUser: Types.ObjectId;
   isDeleted?: boolean;
 }
@@ -26,6 +29,10 @@ const walletTransactionSchema: Schema<WalletTransactionDocument> =
         type: String,
         enums: ["CREDIT", "DEBIT"],
       },
+      booking: {
+        type: Schema.Types.ObjectId,
+        ref: "Booking",
+      },
       user: {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -34,13 +41,19 @@ const walletTransactionSchema: Schema<WalletTransactionDocument> =
         type: Schema.Types.ObjectId,
         ref: "User",
       },
+      paymentMethod: {
+        type: String,
+      },
+      paymentObj: {
+        type: Object,
+      },
       status: {
         type: String,
-        enum:['pending', 'success', 'failed'],
-        default:'success'
+        enum: ["pending", "success", "failed"],
+        default: "success",
       },
-      title:{
-        type:String,
+      title: {
+        type: String,
       },
       isDeleted: {
         type: Boolean,

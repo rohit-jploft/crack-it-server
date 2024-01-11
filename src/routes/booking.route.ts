@@ -3,7 +3,8 @@ import express, { Router } from "express";
 import { isAuthenticated } from "../middlewares/checkAuth";
 import {
   acceptBooking,
-    cancelBooking,
+  bookingPageDashboard,
+  cancelBooking,
   createBooking,
   declinedBooking,
   getAllBooking,
@@ -22,7 +23,8 @@ router.put("/accept/:bookingId", acceptBooking);
 router.put("/decline/:bookingId", declinedBooking);
 router.get("/payments", getAllBookingPayments);
 
+// booking dashboard user logged
 
-
+router.get("/dashboard/user", bookingPageDashboard);
 
 export default router;
