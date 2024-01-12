@@ -18,3 +18,20 @@ export const getAgencyOfAnyExpert = async (userId: Types.ObjectId) => {
     return error.message;
   }
 };
+
+export const getAverageRatingOfSpecificCategory = async (
+  categoryId: Types.ObjectId
+) => {
+  try {
+    const allExpert = await Expert.find({ jobCategory: categoryId });
+    let totalRating = 0;
+    for (let exp of allExpert) {
+      totalRating = totalRating + exp.rating;
+    }
+   
+    let ratingValue = allExpert.length===0 ? 0 : totalRating / allExpert.length;
+    return { rating: ratingValue, success: true };
+  } catch (error: any) {
+    return { success: true, message: error.message };
+  }
+};

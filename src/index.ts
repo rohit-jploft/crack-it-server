@@ -43,6 +43,7 @@ import { getExpertRating } from "./controllers/Rating/rating.controller";
 import { sendEmailfromSmtp } from "./helper/mailService";
 import Notification from "./models/notifications.model";
 import Message from "./models/message.model";
+import { saveRating } from "./scheduler/ratingSaveScheduler";
 //dot env
 dotenv.config();
 
@@ -105,6 +106,7 @@ schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted);
 schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min);
 schedule.scheduleJob("* * * * *", markChatClosedAfterTheMeeting);
 schedule.scheduleJob("* * * * *", cancelReqAcceptedToCancelled);
+// schedule.scheduleJob("* * * * *", saveRating);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {

@@ -7,6 +7,7 @@ export interface ExpertsData {
     description:string;
     expertise:Types.ObjectId[];
     price:number;
+    rating:number;
     languages:string[];
     experience:number;
     isDeleted?:boolean
@@ -46,6 +47,10 @@ const expertSchema: Schema<ExpertsDocument> = new Schema<ExpertsDocument>(
     expertise: {
       type: [Schema.Types.ObjectId],
       ref: "Category",
+    },
+    rating: {
+      type: Number,
+    
     },
     isDeleted: {
         type: Boolean,

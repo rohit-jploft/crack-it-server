@@ -810,8 +810,6 @@ export const bookingPageDashboard = async (req: Request, res: Response) => {
       const count = await Booking.countDocuments({
         createdAt: { $gt: startOfMonth, $lte: endOfMonth },
       });
-
-
       let data = {
         month: currentMonth + 1 > 0 ? currentMonth + 1 : currentMonth + 1 + 12,
         year: startOfMonth.getFullYear(),

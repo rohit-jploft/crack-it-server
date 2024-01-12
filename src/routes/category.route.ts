@@ -4,6 +4,7 @@ import { isAuthenticated } from "../middlewares/checkAuth";
 import {
   createCategory,
   deleteCategory,
+  getAllCategoryWithNoOfExpert,
   getAllcategory,
   updateCategory,
 } from "../controllers/Category/category.controller";
@@ -23,5 +24,7 @@ router.put(
 );
 router.put("/delete/:categoryId", deleteCategory);
 router.get("/get-all", getAllcategory);
+
+router.get("/home/get/all", getAllCategoryWithNoOfExpert);
 
 export default router;

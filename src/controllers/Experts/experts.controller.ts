@@ -7,6 +7,7 @@ import Expert, { ExpertsDocument } from "../../models/experts.model";
 import User from "../../models/user.model";
 import { getExpertRating } from "../Rating/rating.controller";
 import { expertSchema } from "../../schemas/experts.schema";
+import { pagination } from "../../helper/pagination";
 
 // expert profile setup API
 export const expertProfileSetup = async (req: Request, res: Response) => {
@@ -73,7 +74,7 @@ export const getExpertProfile = async (req: Request, res: Response) => {
       .populate("expertise", "title")
       .populate("agency", "-password")
       .populate("jobCategory", "title");
-    const rating:any = await getExpertRating(userId.toString());
+    const rating: any = await getExpertRating(userId.toString());
     return res.status(200).json({
       status: 200,
       success: true,
@@ -140,12 +141,13 @@ export const getAllExpertBasedOnSearch = async (
       rating,
       typeOfExpert,
     } = req.query;
-    console.log(jobCategory);
-    let expertise: any = skills
-      ?.toString()
-      .split(",")
-      .map((item: string) => ObjectId(item.trim()));
-
+    // console.log(jobCategory);
+    if (skills) {
+      var expertise: any = skills
+        ?.toString()
+        .split(",")
+        .map((item: string) => ObjectId(item.trim()));
+    }
     const pipeline = [];
     var typeLength;
     if (typeOfExpert) {
@@ -167,8 +169,6 @@ export const getAllExpertBasedOnSearch = async (
             agency: { $exists: true },
           },
         });
-       
-
       }
       if (typeOfExpert[0] === "EXPERT") {
         pipeline.push({
@@ -206,7 +206,7 @@ export const getAllExpertBasedOnSearch = async (
         },
       });
     }
-    
+
     pipeline.push({
       $lookup: {
         from: "users", // Assuming the collection name is 'users'
@@ -216,9 +216,9 @@ export const getAllExpertBasedOnSearch = async (
         pipeline: [
           {
             $project: {
-              agencyName:1,
-              profilePhoto:1,
-              role:1,
+              agencyName: 1,
+              profilePhoto: 1,
+              role: 1,
               email: 1,
             },
           },
@@ -229,7 +229,6 @@ export const getAllExpertBasedOnSearch = async (
       $unwind: {
         path: "$agency",
         preserveNullAndEmptyArrays: true,
-        
       },
     });
     pipeline.push({
@@ -245,8 +244,8 @@ export const getAllExpertBasedOnSearch = async (
               lastName: 1,
               phone: 1,
               countryCode: 1,
-              profilePhoto:1,
-              agency:1,
+              profilePhoto: 1,
+              agency: 1,
               email: 1,
             },
           },
@@ -296,7 +295,7 @@ export const getAllExpertBasedOnSearch = async (
       });
     }
     const experts = await Expert.aggregate(pipeline);
-    const list:any = await Promise.all(
+    const list: any = await Promise.all(
       experts.map(async (expert) => {
         const rating = await getExpertRating(expert.user._id.toString());
         return {
@@ -308,13 +307,13 @@ export const getAllExpertBasedOnSearch = async (
     let finalList;
     if (rating) {
       finalList = await Promise.all(
-        list.filter((exprt:any) => {
+        list.filter((exprt: any) => {
           return parseInt(exprt.rating.toString()) >= parseInt(`${rating}`);
         })
       );
     }
-    console.log(list, "list")
-    console.log(finalList, "final list")
+    console.log(list, "list");
+    console.log(finalList, "final list");
     return res.status(200).json({
       success: true,
       status: 200,
@@ -360,13 +359,53 @@ export const updateExpert = async (req: Request, res: Response) => {
     exp.experience = data?.experience ? data?.experience : exp.experience;
 
     await exp.save();
-    await user.save()
+    await user.save();
 
     return res.status(200).json({
       status: 200,
       success: true,
       data: exp,
       message: "Expert profile updated successfully",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const getAllHighestRatedExpert = async (req: Request, res: Response) => {
+  const currentPage = Number(req?.query?.page) + 1 || 1;
+  const limit = Number(req?.query?.limit) || 10;
+  const skip = limit * (currentPage - 1);
+  const { jobCategory, search } = req.query;
+  let query: any = {};
+  if (jobCategory) {
+    query.jobCategory = ObjectId(jobCategory.toString());
+  }
+
+  console.log(query, "query");
+  try {
+    // Find all experts and sort them by rating
+    const sortedExperts = await Expert.find(query)
+      .populate("user", "firstName lastName email phone")
+      .populate("jobCategory", "title")
+      .populate("expertise", "title")
+      .sort({ rating: -1 }) // Sorting by rating in descending order
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await Expert.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: sortedExperts,
+      pagination: pagination(totalCount, currentPage, limit),
+      message: "Experts are listed according to their rating",
     });
   } catch (error: any) {
     // Return error if anything goes wrong
