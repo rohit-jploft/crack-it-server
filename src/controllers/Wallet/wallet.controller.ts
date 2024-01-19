@@ -14,6 +14,8 @@ import { NoticationMessage } from "../../utils/notificationMessageConstant";
 import Booking from "../../models/booking.model";
 import BookingPayment from "../../models/bookingPayment.model";
 import { getSuperAdminId } from "../../helper/impFunctions";
+import mongoose from "mongoose";
+
 
 export const createWallet = async (userId: string) => {
   try {
@@ -36,9 +38,15 @@ export const createTransaction = async (
   user: Types.ObjectId,
   otherUser: Types.ObjectId,
   title: string,
+  booking?: Types.ObjectId,
   txnType?: string,
-  success?: boolean
+  success?: boolean,
+  
 ) => {
+  // transaction initialisation
+  const session = await mongoose.startSession();
+  // start the session
+  session.startTransaction();
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
     if (!Types.ObjectId.isValid(user) || !Types.ObjectId.isValid(otherUser)) {
@@ -47,7 +55,8 @@ export const createTransaction = async (
 
     var otherUserWallet;
     // Check the user's wallet balance
-    const userWallet = await Wallet.findOne({ user });
+
+    const userWallet = await Wallet.findOne({ user }).session(session);
 
     if (!userWallet) {
       return { type: "error", message: "User wallet not found" };
@@ -55,7 +64,9 @@ export const createTransaction = async (
 
     // Check the otherUser's wallet balance (only for CREDIT transactions)
     if (type === "CREDIT") {
-      otherUserWallet = await Wallet.findOne({ user: otherUser });
+      otherUserWallet = await Wallet.findOne({ user: otherUser }).session(
+        session
+      );
       const otherUserRole = await User.findOne({ _id: otherUser });
 
       if (!otherUserWallet) {
@@ -77,22 +88,38 @@ export const createTransaction = async (
     }
 
     // Create a new wallet transaction for the user
-    const userTransaction = new WalletTransaction({
-      amount,
-      type,
-      user,
-      otherUser,
-      title,
-    });
+    const userTransaction = new WalletTransaction(
+      {
+        amount,
+        type,
+        user,
+        otherUser,
+        title,
+        status: "success",
+        paymentMethod:"WALLET",
+        booking,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
 
     // Create a new wallet transaction for the otherUser (reverse type)
-    const otherUserTransaction = new WalletTransaction({
-      amount: amount,
-      type: type === "CREDIT" ? "DEBIT" : "CREDIT",
-      user: otherUser,
-      otherUser: user,
-      title,
-    });
+    const otherUserTransaction = new WalletTransaction(
+      {
+        amount: amount,
+        type: type === "CREDIT" ? "DEBIT" : "CREDIT",
+        user: otherUser,
+        otherUser: user,
+        title,
+        booking,
+        paymentMethod:"WALLET",
+        status: "success",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
     console.log(amount, "amount");
     // Save both transactions
     await userTransaction.save();
@@ -106,63 +133,108 @@ export const createTransaction = async (
     }
 
     // Save the updated user wallet balance
-    await userWallet.save();
-
+    await userWallet.save({ session });
+    // Commit the transaction
+    await session.commitTransaction();
     return { userTransaction, otherUserTransaction };
   } catch (error) {
+    await session.abortTransaction();
     return { message: "Server error", type: "error" };
+  } finally {
+    session.endSession();
   }
 };
 export const createStripeTransaction = async (
   bookingId: Types.ObjectId,
   amount: number,
-  type: "CREDIT" | "DEBIT",
+
   user: Types.ObjectId,
-  otherUser: Types.ObjectId,
   title: string,
   // paymentMethod: "WALLET" | "CARD",
   success: "success" | "failed" | "pending"
 ) => {
   // Ensure that user and otherUser exist and are valid ObjectId strings
   if (!Types.ObjectId.isValid(user)) {
-    return { type: "error", message: "Invalid IDs" };
+    return { type: "error", message: "Invalid IDs", success:false };
   }
 
   // Check the user's wallet balance
   const userWallet = await Wallet.findOne({ user });
 
   if (!userWallet) {
-    return { type: "error", message: "User wallet not found" };
+    return { type: "error", message: "User wallet not found" , success:false};
   }
-  const superAdminId = await getSuperAdminId();
-  const adminSideTrans = new WalletTransaction({
-    title: title,
-    paymentMethod: "CARD",
-    user: superAdminId,
-    booking: bookingId,
-    otherUser: ObjectId(user.toString()),
-    amount: amount,
-    type: "CREDIT",
-  });
-  await adminSideTrans.save();
-  const newTrans = new WalletTransaction({
-    title: title,
-    paymentMethod: "CARD",
-    booking: bookingId,
-    user: ObjectId(user.toString()),
-    otherUser: superAdminId,
-    amount: amount,
-    type: "DEBIT",
-  });
-  await newTrans.save();
-  return {
-    type: "success",
-    message: "transactions are successfull",
-    data: {
-      userTransaction: newTrans,
-      superAdminTransaction: adminSideTrans,
-    },
-  };
+  // transaction initialisation
+  const session = await mongoose.startSession();
+  // start the session
+  session.startTransaction();
+  try {
+    const superAdminId = await getSuperAdminId();
+    const adminSideTrans = new WalletTransaction(
+      {
+        title: title,
+        paymentMethod: "CARD",
+        user: superAdminId,
+        booking: bookingId,
+        otherUser: ObjectId(user.toString()),
+        amount: amount,
+        type: "CREDIT",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
+    await adminSideTrans.save();
+    const newTrans = new WalletTransaction(
+      {
+        title: title,
+        paymentMethod: "CARD",
+        booking: bookingId,
+        user: ObjectId(user.toString()),
+        otherUser: superAdminId,
+        amount: amount,
+        type: "DEBIT",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
+    await newTrans.save();
+    await session.commitTransaction();
+    return {
+      type: "success",
+      success:true,
+      message: "transactions are successfull",
+      data: {
+        userTransaction: newTrans,
+        superAdminTransaction: adminSideTrans,
+      },
+    };
+  } catch (error: any) {
+    await session.abortTransaction();
+    return { type: "error",success:false,message: error.message };
+  } finally {
+    await session.endSession();
+  }
+};
+export const updateTransactionStatus = async (
+  bookingId: Types.ObjectId,
+  status: "pending" | "success" | "failed"
+) => {
+  try {
+    const updateStatus = await WalletTransaction.updateMany(
+      { booking: bookingId },
+      { $set: { status: status } }
+    );
+    console.log(updateStatus, "updateStatus");
+    if (updateStatus.modifiedCount > 0) {
+      return { type: "success", success: true, data: updateStatus };
+    } else {
+      return { type: "success", success: false, data: updateStatus };
+    }
+  } catch (error: any) {
+    return { success: false, type: "error", message: error.message };
+  }
 };
 export const getUsersTransaction = async (req: Request, res: Response) => {
   const currentPage = Number(req?.query?.page) + 1 || 1;
@@ -183,11 +255,11 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
 
     // Find and return wallet transactions for the user
     const transactions = await WalletTransaction.find({ user: userId })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("user", "firstName lastName")
-      .populate("otherUser", "firstName lastName")
-      .sort({ createdAt: -1 });
+      .populate("otherUser", "firstName lastName");
 
     console.log(transactions, "transactions");
     const wallet = await createWallet(userId);
@@ -197,7 +269,7 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
     });
     console.log(totalCount, "totalCount");
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       type: "success",
       data: { wallet: wallet, transactions },
@@ -357,6 +429,7 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
         withdrawal?.user,
         admin?._id,
         "Withdraw",
+        ObjectId(""),
         "WITHDRAWAL"
       );
       await withdrawal.save();
@@ -404,7 +477,8 @@ export const payWithWallet = async (req: Request, res: Response) => {
         "DEBIT",
         userId,
         superAdminId,
-        "Booking Payment"
+        "Booking Payment",
+        ObjectId(bookingId.toString())
       );
       console.log(transaction);
       booking.status = "PAID";
@@ -430,7 +504,8 @@ export const payWithWallet = async (req: Request, res: Response) => {
           "DEBIT",
           userId,
           superAdminId,
-          "Booking Payment"
+          "Booking Payment",
+          ObjectId(bookingId.toString())
         );
       }
       console.log(trans, "trans");

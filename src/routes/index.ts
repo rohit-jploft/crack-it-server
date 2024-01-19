@@ -15,6 +15,7 @@ import PaymentRoute from "./payment.route";
 import AgencyRoute from "./agency.route";
 import ContactUs from "./contact.route";
 import NotificationRoute from "./notification.route";
+import ticketRoutes from "./ticket.route";
 
 const router: Router = express.Router();
 
@@ -34,5 +35,6 @@ router.use("/payment", PaymentRoute);
 router.use("/agency", AgencyRoute);
 router.use("/contacts", ContactUs);
 router.use("/notification", NotificationRoute);
+router.use("/ticket", ticketRoutes);
 
 export default router;

@@ -391,7 +391,7 @@ export const getAllHighestRatedExpert = async (req: Request, res: Response) => {
   try {
     // Find all experts and sort them by rating
     const sortedExperts = await Expert.find(query)
-      .populate("user", "firstName lastName email phone")
+      .populate("user", "firstName lastName email phone profilePhoto")
       .populate("jobCategory", "title")
       .populate("expertise", "title")
       .sort({ rating: -1 }) // Sorting by rating in descending order

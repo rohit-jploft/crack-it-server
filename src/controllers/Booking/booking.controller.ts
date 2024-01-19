@@ -28,9 +28,9 @@ import { sendNotification } from "../../helper/notifications";
 import { createTransaction } from "../Wallet/wallet.controller";
 import { getSuperAdminId } from "../../helper/impFunctions";
 import {
-  createNewRefundRequest,
+
   getRefundAmountFromBooking,
-} from "../Refund/refund.controller";
+} from "../RaiseIssue/raiseIssue.controller";
 import Wallet from "../../models/wallet.model";
 import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
 import Category from "../../models/category.model";
@@ -479,7 +479,8 @@ export const refundAmountForMeeting = async (meetingId: Types.ObjectId) => {
         "CREDIT",
         booking?.user,
         superAdminId,
-        "refund"
+        "refund",
+        booking.booking
       );
     }
   } catch (error: any) {
@@ -509,14 +510,16 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
         "DEBIT",
         booking.expert,
         superAdminId,
-        "Cancellation charge"
+        "Cancellation charge",
+        ObjectId(bookingId.toString())
       );
       var userTrans = await createTransaction(
         bookingPayment.totalAmount,
         "CREDIT",
         booking.user,
         superAdminId,
-        "Cancellation return"
+        "Cancellation return",
+        ObjectId(bookingId.toString())
       );
       return { trans, userTrans, isLow: true };
     }
@@ -526,6 +529,7 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
 };
 export const cancelBooking = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
+  const {reason} = req.body;
   const { role } = req.query;
   const superAdminId = await getSuperAdminId();
   try {
@@ -555,13 +559,15 @@ export const cancelBooking = async (req: Request, res: Response) => {
         "CREDIT",
         booking.user,
         superAdminId,
-        "Refund for cancellation by expert"
+        "Refund for cancellation by expert",
+        ObjectId(bookingId)
       );
       console.log(trans, "trans");
     }
 
     // await createNewRefundRequest(ObjectId(bookingId),50 );
     booking.status = "CANCELLED";
+    booking.cancellationReason = reason ? reason : "";
     await createNotification(
       ObjectId(booking.user),
       ObjectId(booking.expert),

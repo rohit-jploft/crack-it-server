@@ -50,7 +50,7 @@ const walletTransactionSchema: Schema<WalletTransactionDocument> =
       status: {
         type: String,
         enum: ["pending", "success", "failed"],
-        default: "success",
+        default: "pending",
       },
       title: {
         type: String,

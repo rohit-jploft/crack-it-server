@@ -7,7 +7,11 @@ import { createNotification } from "../Notifications/Notification.controller";
 import { NoticationMessage } from "../../utils/notificationMessageConstant";
 import { NotificationType } from "../../utils/NotificationType";
 import Wallet, { WalletDocument } from "../../models/wallet.model";
-import { createTransaction } from "../Wallet/wallet.controller";
+import {
+  createStripeTransaction,
+  createTransaction,
+  updateTransactionStatus,
+} from "../Wallet/wallet.controller";
 import { getSuperAdminId } from "../../helper/impFunctions";
 import { payWithWallet } from "../../schemas/wallet.schema";
 
@@ -34,9 +38,8 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     line_items: lineItems,
     mode: "payment",
     success_url: "https://crack-it-website.netlify.app/check-payment",
-    cancel_url: "http://crack-it-website.netlify.app/mybookings/Requested",
+    cancel_url: "https://crack-it-website.netlify.app/mybookings/Requested",
   });
-  console.log(session, "session");
   // const check = stripe.paymentIntents.retrieve(session.id);
   // console.log(check, "checkPayment")
   if (session) {
@@ -51,7 +54,15 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       },
       { new: true }
     );
-    console.log(meeting, payment);
+    if (session && session.id) {
+      await createStripeTransaction(
+        ObjectId(meetingId),
+        amount,
+        meeting.user,
+        "Booking Payment",
+        "pending"
+      );
+    }
   }
   return res.status(200).json({ id: session.id, bookingId: meetingId });
 };
@@ -63,7 +74,6 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
       type === "session"
         ? await stripe.checkout.sessions.retrieve(id)
         : await stripe.paymentIntents.retrieve(id);
-    console.log(checkIntent);
     if (checkIntent.status === "succeeded") {
       const booking: any = await Booking.findById(
         ObjectId(bookingId.toString())
@@ -75,14 +85,17 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
       booking.status = "CONFIRMED";
       payment.status = "PAID";
       if (walletTransactionId) {
-        console.log("wallet id ");
         payment.paymentObj = { walletTransactionId, payment: checkIntent };
       } else {
-        console.log("no wallet id ");
         payment.paymentObj = checkIntent;
       }
       await booking.save();
       await payment.save();
+      const updateTrans = await updateTransactionStatus(
+        ObjectId(bookingId),
+        "success"
+      );
+      console.log(updateTrans, "updateTrans");
       await createNotification(
         booking.user,
         booking.expert,
@@ -118,6 +131,10 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
       }
       await booking.save();
       await payment.save();
+      const updateTrans = await updateTransactionStatus(
+        ObjectId(bookingId),
+        "success"
+      );
       return res.status(200).json({
         success: true,
         status: 200,
@@ -183,7 +200,8 @@ export const payThroughWallet = async (req: Request, res: Response) => {
         "DEBIT",
         userId,
         superAdminId,
-        "Booking payment"
+        "Booking payment",
+        ObjectId(bookingId.toString())
       );
       // const transaction = {
       //   userTransaction:{
@@ -218,16 +236,31 @@ export const payThroughWallet = async (req: Request, res: Response) => {
           mode: "payment",
         });
         if (session && session?.id) {
-          return res.status(200).json({
-            status: 200,
-            success: true,
-            type: "success",
-            data: {
-              id: session.id,
-              bookingId: bookingId,
-              walletTransactionId: transaction.userTransaction._id,
-            },
-          });
+          const trans = await createStripeTransaction(
+            booking._id,
+            remainingAmount,
+            booking.user,
+            "Booking Payment",
+            "pending"
+          );
+          if (trans && trans.success) {
+            return res.status(200).json({
+              status: 200,
+              success: true,
+              type: "success",
+              data: {
+                id: session.id,
+                bookingId: bookingId,
+                walletTransactionId: transaction.userTransaction._id,
+              },
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              type: "error",
+              message: trans.message,
+            });
+          }
         }
       } else {
         return res.status(200).json({
@@ -244,7 +277,8 @@ export const payThroughWallet = async (req: Request, res: Response) => {
         "DEBIT",
         userId,
         superAdminId,
-        "Booking payment"
+        "Booking payment",
+        ObjectId(bookingId.toString())
       );
       if (transaction) {
         const booking: any = await Booking.findById(
@@ -332,7 +366,8 @@ export const payThroughWalletMobileApi = async (
         "DEBIT",
         userId,
         superAdminId,
-        "Booking payment"
+        "Booking payment",
+        ObjectId(bookingId.toString())
       );
       if (transaction && transaction.userTransaction) {
         const remainingAmount = parseFloat(amount) - checkWallet.amount;
@@ -364,7 +399,8 @@ export const payThroughWalletMobileApi = async (
         "DEBIT",
         userId,
         superAdminId,
-        "Booking payment"
+        "Booking payment",
+        ObjectId(bookingId.toString())
       );
       if (transaction) {
         const booking: any = await Booking.findById(
@@ -393,6 +429,46 @@ export const payThroughWalletMobileApi = async (
         status: 200,
         type: "success",
         data: transaction,
+      });
+    }
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const createTransactionForMobileIntentCreatedByApp = async (
+  req: Request,
+  res: Response
+) => {
+  const { bookingId, amount } = req.body;
+  try {
+    const meeting: any = await Booking.findById(ObjectId(bookingId.toString()));
+    const createTrans: any = await createStripeTransaction(
+      ObjectId(meeting._id),
+      parseFloat(amount),
+      ObjectId(meeting.user),
+      "Booking Payment",
+      "pending"
+    );
+
+    if (createTrans && createTrans.success) {
+      return res.status(200).json({
+        success: true,
+        type: "success",
+        message: "transaction created",
+        data: createTrans.data,
+      });
+    } else {
+      return res.status(200).json({
+        success: false,
+        type: "error",
+        status: 200,
+        message: "something went wrong",
       });
     }
   } catch (error: any) {

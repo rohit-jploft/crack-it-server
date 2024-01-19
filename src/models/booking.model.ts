@@ -20,6 +20,7 @@ export interface BookingData {
   timeZone: string;
   endTime: Date;
   skills: Types.ObjectId[];
+  cancellationReason:string;
   status:
     | "REQUESTED"
     | "CONFIRMED"
@@ -122,6 +123,10 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     duration: {
       type: Number,
     },
+    cancellationReason:{
+      type:String,
+      default:""
+    }
   },
   { timestamps: true }
 );

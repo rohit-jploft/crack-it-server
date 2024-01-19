@@ -27,4 +27,4 @@ export const timeZoneList = [
     { "offsetMinutes": 540, "symbol": "JST", "name": "Japan Standard Time" },
     { "offsetMinutes": 600, "symbol": "AEST", "name": "Australian Eastern Standard Time" },
     { "offsetMinutes": 720, "symbol": "NZST", "name": "New Zealand Standard Time" }
-  ]
+]

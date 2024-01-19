@@ -22,28 +22,16 @@ import fs from "fs";
 import os from "os";
 import Chat from "./models/chat.model";
 import { ObjectId } from "./helper/RequestHelper";
-import {
-  createTransaction,
-  createWallet,
-} from "./controllers/Wallet/wallet.controller";
+
 import {
   cancelReqAcceptedToCancelled,
   makeStatusFromConfirmedToCompleted,
   markChatClosedAfterTheMeeting,
   startChatForConfirmedBookingBefore15Min,
 } from "./scheduler/bookingScheduler";
-import { sendNotification } from "./helper/notifications";
-import { NoticationMessage } from "./utils/notificationMessageConstant";
-import { getRefundAmountFromBooking } from "./controllers/Refund/refund.controller";
-import { checkAndVerifyPayment } from "./controllers/Payment/payment.controller";
-import { createConversation } from "./controllers/Chat/chat.controller";
-import User from "./models/user.model";
-import Booking from "./models/booking.model";
-import { getExpertRating } from "./controllers/Rating/rating.controller";
-import { sendEmailfromSmtp } from "./helper/mailService";
-import Notification from "./models/notifications.model";
-import Message from "./models/message.model";
+import Wallet from "./models/wallet.model";
 import { saveRating } from "./scheduler/ratingSaveScheduler";
+
 //dot env
 dotenv.config();
 
@@ -106,7 +94,7 @@ schedule.scheduleJob("* * * * *", makeStatusFromConfirmedToCompleted);
 schedule.scheduleJob("* * * * *", startChatForConfirmedBookingBefore15Min);
 schedule.scheduleJob("* * * * *", markChatClosedAfterTheMeeting);
 schedule.scheduleJob("* * * * *", cancelReqAcceptedToCancelled);
-// schedule.scheduleJob("* * * * *", saveRating);
+schedule.scheduleJob("* * * * *", saveRating);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const error = {
@@ -114,7 +102,7 @@ app.use("*", (req: Request, res: Response, next: NextFunction) => {
     message: API_ENDPOINT_NOT_FOUND_ERR,
   };
   next(error);
-});
+});  
 
 // Global error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -213,10 +201,6 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
-    // await Notification.updateMany({}, {isRead:true})
-    // await createConversation([ObjectId('6548886847ebf9db402d76de'), ObjectId("65291bd55362175c14d19466")], ObjectId('654b23aeeef44186bd7d39f6'))
-    // const email = await sendEmailfromSmtp("rohitdeshmukh@gmail.com", "RESET PASSWORD", "Your OTP is 12354")
-    // console.log(email);
     console.log("database connected");
   } catch (error) {
     console.log(error);

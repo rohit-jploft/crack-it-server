@@ -388,12 +388,12 @@ export const getChatFromMeetingId = async (req: Request, res: Response) => {
       });
     }
     return res.status(200).json({
-      success: true,
-      status: 200,
-      data: {
-        chat: chatWindow._id,
-      },
-      message: "Chat details fetched successfully",
+        success: true,
+        status: 200,
+        data: {
+          chat: chatWindow._id,
+        },
+        message: "Chat details fetched successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

@@ -39,7 +39,8 @@ export const makeStatusFromConfirmedToCompleted = async () => {
         "CREDIT",
         book.expert,
         superAdminId,
-        "Booking Payment"
+        "Booking Payment",
+        ObjectId(book._id)
       );
     }
     const getBooking = await Booking.updateMany(
