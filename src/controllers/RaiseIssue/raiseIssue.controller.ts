@@ -135,15 +135,15 @@ export const getAllTickets = async (req: Request, res: Response) => {
       {
         $lookup: {
           from: "reasons",
-          localField: "cancelReason",
+          localField: "reason",
           foreignField: "_id",
-          as: "cancelReason",
+          as: "reason",
         },
       },
       {
         $unwind: {
-          path: "$cancelReason",
-          preserveNullAndEmptyArrays: true,
+          path: "$reason",
+          // preserveNullAndEmptyArrays: true,
         },
       },
       {

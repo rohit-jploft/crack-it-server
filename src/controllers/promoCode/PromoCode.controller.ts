@@ -240,13 +240,13 @@ export const validatePromoCode = async (req: Request, res: Response) => {
     const getPromoCode:any = await PromoCode.findOne({
       isActive: true,
       code: promoCode,
-      expirationDate: { $gte: new Date() },
+      expirationDate: { $gte: new Date().setHours(0,0,0,0) },
     });
     const getPromoCodeWithOut:any = await PromoCode.findOne({
       isActive: true,
       code: promoCode,
     });
-    if(!getPromoCode && getPromoCodeWithOut && getPromoCodeWithOut.expirationDate < new Date()){
+    if(!getPromoCode && getPromoCodeWithOut && getPromoCodeWithOut.expirationDate < new Date().setHours(0,0,0,0)){
       return res.status(200).json({
         success: false,
         type:'error',

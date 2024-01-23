@@ -485,6 +485,8 @@ export const payAndProceedWhenAmountZero = async (
   res: Response
 ) => {
   const { bookingId } = req.params;
+
+  
   try {
     const booking: any = await Booking.findByIdAndUpdate(ObjectId(bookingId), {
       $set: { status: "CONFIRMED" },
@@ -499,6 +501,7 @@ export const payAndProceedWhenAmountZero = async (
       "Booking payment",
       ObjectId(bookingId.toString())
     );
+    console.log(transaction)
     if (transaction && transaction.userTransaction) {
       const updatePayment = await BookingPayment.findOneAndUpdate(
         { booking: ObjectId(bookingId) },
