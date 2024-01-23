@@ -480,3 +480,55 @@ export const createTransactionForMobileIntentCreatedByApp = async (
     });
   }
 };
+export const payAndProceedWhenAmountZero = async (
+  req: Request,
+  res: Response
+) => {
+  const { bookingId } = req.params;
+  try {
+    const booking: any = await Booking.findByIdAndUpdate(ObjectId(bookingId), {
+      $set: { status: "CONFIRMED" },
+    });
+
+    const superAdminId = await getSuperAdminId();
+    const transaction = await createTransaction(
+      0,
+      "DEBIT",
+      booking?.user,
+      superAdminId,
+      "Booking payment",
+      ObjectId(bookingId.toString())
+    );
+    if (transaction && transaction.userTransaction) {
+      const updatePayment = await BookingPayment.findOneAndUpdate(
+        { booking: ObjectId(bookingId) },
+        { $set: { status: "PAID", paymentObj: transaction } }
+      );
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: updatePayment,
+        message: "your booking is confirmed",
+      });
+    } else {
+      const booking: any = await Booking.findByIdAndUpdate(
+        ObjectId(bookingId),
+        {
+          $set: { status: "ACCEPTED" },
+        }
+      );
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        message: "transaction failed",
+      });
+    }
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};

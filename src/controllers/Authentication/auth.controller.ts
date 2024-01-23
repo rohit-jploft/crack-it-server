@@ -14,13 +14,15 @@ import {
 } from "../../utils/error";
 import { createJwtToken } from "../../utils/token.util";
 import { ObjectId } from "../../helper/RequestHelper";
-import { createWallet } from "../Wallet/wallet.controller";
+import { createTransaction, createWallet } from "../Wallet/wallet.controller";
 // import { checkVerification, sendVerification } from "../../helper/smsService";
 import Expert from "../../models/experts.model";
 import { Roles } from "../../utils/role";
 import { existsSync, unlinkSync } from "fs";
 import { generateOtp, generateRandomNumber } from "../../helper/helper";
 import { sendEmailfromSmtp } from "../../helper/mailService";
+import { getSuperAdminId } from "../../helper/impFunctions";
+import { Types } from "mongoose";
 
 export const createNewUser = async (req: Request, res: Response) => {
   let data = req.body;
@@ -38,7 +40,9 @@ export const createNewUser = async (req: Request, res: Response) => {
     });
   }
   // check user exists or not
-  const userWithEmail = await User.findOne({ email: value.email.toLowerCase() });
+  const userWithEmail = await User.findOne({
+    email: value.email.toLowerCase(),
+  });
   const userWithPhone = await User.findOne({ phone: value.phone });
 
   // if user exists
@@ -80,7 +84,27 @@ export const createNewUser = async (req: Request, res: Response) => {
         termAndConditions: true,
       });
       // save
-      await createWallet(newUser._id.toString());
+      const newUserWallet = await createWallet(newUser._id.toString());
+
+      if (value.referBy && Types.ObjectId.isValid(value.referBy)) {
+        const superAdminId = await getSuperAdminId();
+        // bonus to new joinee
+        await createTransaction(
+          5,
+          "CREDIT",
+          newUser._id,
+          superAdminId,
+          "Referal Bonus"
+        );
+        // rewards to old user who refered to new joinee
+        await createTransaction(
+          5,
+          "CREDIT",
+          ObjectId(value.referBy),
+          superAdminId,
+          "Referal Bonus"
+        );
+      }
       // return the success response for account creation
       return res.status(200).json({
         type: "success",
@@ -446,7 +470,8 @@ export const forgotPasswordsendOtp = async (req: Request, res: Response) => {
       This OTP will expire in 15 Min. Please do not share it with anyone for security reasons.
       
       Thank you,
-      Crack-IT`, {otp:newOtp}
+      Crack-IT`,
+        { otp: newOtp }
       );
       checkUser.otp = newOtp;
       await checkUser.save();
@@ -659,5 +684,26 @@ export const setAvatarProfilePicture = async (req: Request, res: Response) => {
     });
   }
 };
+export const removeFirstLogger = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const dataUpdate = await User.findByIdAndUpdate(
+      { _id: ObjectId(userId) },
+      { $set: { isLoggedInFirstTime: false } }
+    );
 
+    return res.status(200).json({
+      success: false,
+      type: "success",
+      data: dataUpdate,
+      message: "Data updated ",
+    });
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
 // export const saveTimeZoneForUser = async

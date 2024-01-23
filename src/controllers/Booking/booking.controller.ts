@@ -27,10 +27,7 @@ import { NotificationType } from "../../utils/NotificationType";
 import { sendNotification } from "../../helper/notifications";
 import { createTransaction } from "../Wallet/wallet.controller";
 import { getSuperAdminId } from "../../helper/impFunctions";
-import {
-
-  getRefundAmountFromBooking,
-} from "../RaiseIssue/raiseIssue.controller";
+import { getRefundAmountFromBooking } from "../RaiseIssue/raiseIssue.controller";
 import Wallet from "../../models/wallet.model";
 import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
 import Category from "../../models/category.model";
@@ -529,7 +526,7 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
 };
 export const cancelBooking = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  const {reason} = req.body;
+  const { reason, comment } = req.body;
   const { role } = req.query;
   const superAdminId = await getSuperAdminId();
   try {
@@ -567,7 +564,8 @@ export const cancelBooking = async (req: Request, res: Response) => {
 
     // await createNewRefundRequest(ObjectId(bookingId),50 );
     booking.status = "CANCELLED";
-    booking.cancellationReason = reason ? reason : "";
+    booking.cancelReason = reason ? reason : "";
+    booking.cancelComment = comment ? comment : "";
     await createNotification(
       ObjectId(booking.user),
       ObjectId(booking.expert),
@@ -729,12 +727,9 @@ export const getAllBookingPayments = async (req: Request, res: Response) => {
 
 export const getSingleBookingDetail = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  var finalRes;
+  var finalRes: any;
   try {
-    // const booking = await Booking.findById(bookingId)
-    //   .populate("expert", "firstName lastName email")
-    //   .populate("expert", "firstName lastName email");
-    // finalRes.booking = booking;
+    const booking = await Booking.findById(bookingId).populate("cancelReason");
 
     const payment: any = await BookingPayment.findOne({
       booking: bookingId,
@@ -743,9 +738,7 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
       .populate({
         path: "booking",
         populate: {
-          path: "expert user jobCategory skills",
-
-          select: "-password",
+          path: "cancelReason expert user jobCategory skills",
         },
       });
     const expert = await Expert.findOne({
@@ -758,8 +751,13 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
     //    }
 
     // }
+    console.log(payment, "payment");
     finalRes = {
       booking: payment,
+      cancel:
+        booking?.status === "CANCELLED"
+          ? { reason: booking.cancelReason, comment: booking.cancelComment }
+          : null,
       expertProfile: expert,
     };
     return res.status(200).json({
@@ -777,6 +775,7 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const bookingPageDashboard = async (req: Request, res: Response) => {
   try {
     const startOfMonth = new Date();
@@ -845,3 +844,5 @@ export const bookingPageDashboard = async (req: Request, res: Response) => {
     });
   }
 };
+
+

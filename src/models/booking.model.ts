@@ -13,14 +13,15 @@ export interface BookingData {
   jobCategory: Types.ObjectId;
   jobDescription: string;
   date: Date;
-  isExpertRated:boolean;
+  isExpertRated: boolean;
   duration: Number;
   expert: Types.ObjectId;
   startTime: Date;
   timeZone: string;
   endTime: Date;
   skills: Types.ObjectId[];
-  cancellationReason:string;
+  cancelReason: Types.ObjectId;
+  cancelComment:string;
   status:
     | "REQUESTED"
     | "CONFIRMED"
@@ -47,9 +48,9 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     jobDescription: {
       type: String,
     },
-    isExpertRated:{
-      type:Boolean,
-      default:false
+    isExpertRated: {
+      type: Boolean,
+      default: false,
     },
     jobCategory: {
       type: Schema.Types.ObjectId,
@@ -123,10 +124,13 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     duration: {
       type: Number,
     },
-    cancellationReason:{
-      type:String,
-      default:""
-    }
+    cancelReason: {
+      type: Schema.Types.ObjectId,
+      ref: "Reason",
+    },
+    cancelComment: {
+      type:String
+    },
   },
   { timestamps: true }
 );

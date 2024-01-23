@@ -2,7 +2,11 @@ import { Request, Response } from "express";
 import Refund from "../../models/refund.model";
 import { Types } from "mongoose";
 import Booking from "../../models/booking.model";
-import { combineTimestamps, generateRandomNumber, getHoursBefore } from "../../helper/helper";
+import {
+  combineTimestamps,
+  generateRandomNumber,
+  getHoursBefore,
+} from "../../helper/helper";
 import BookingPayment from "../../models/bookingPayment.model";
 import { createTransaction } from "../Wallet/wallet.controller";
 import User from "../../models/user.model";
@@ -11,6 +15,8 @@ import { pagination } from "../../helper/pagination";
 import raiseTicketSchema from "../../schemas/ticket.schema";
 import RaiseIssue from "../../models/raiseIssue.model";
 import { ObjectId } from "../../helper/RequestHelper";
+import { ObjectId as TypeObjectId } from "mongodb";
+import Reason from "../../models/reasons.model";
 
 export const createIssueTicket = async (req: Request, res: Response) => {
   const data = req.body;
@@ -52,7 +58,7 @@ export const createIssueTicket = async (req: Request, res: Response) => {
       booking: value.booking,
       user: value.user,
       reason: value.reason,
-      ticketNo:generateRandomNumber(),
+      ticketNo: generateRandomNumber().toString(),
       query: value.query,
       attachment: media ? media : "",
     });
@@ -79,18 +85,67 @@ export const getAllTickets = async (req: Request, res: Response) => {
   let limit = Number(req?.query?.limit) || 10;
   const skip = limit * (currentPage - 1);
 
-  const { user } = req.query;
+  const { user, status, search } = req.query;
 
   let query: any = { isDeleted: false };
 
-  if (user) query.user = ObjectId(user.toString());
-  console.log(query, "query")
   try {
+    if (user) {
+      if (TypeObjectId.isValid(user.toString())) {
+        query.user = ObjectId(user.toString());
+      } else {
+        // Handle the case where user is not a valid ObjectId
+        return res.status(400).json({
+          type: "error",
+          success: false,
+          message: "Invalid user ID provided",
+        });
+      }
+    }
+    if (status) {
+      query.status = { $regex: status, $options: "i" };
+    }
+    if (search) {
+      query["$or"] = [{ ticketNo: { $regex: search, $options: "i" } }];
+    }
+    console.log(query, "query");
     const getData = await RaiseIssue.aggregate([
-      { $match: query  },
+      { $match: query },
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+          pipeline: [
+            {
+              $project: {
+                firstName: 1,
+                lastName: 1,
+                email: 1,
+              },
+            },
+          ],
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $lookup: {
+          from: "reasons",
+          localField: "cancelReason",
+          foreignField: "_id",
+          as: "cancelReason",
+        },
+      },
+      {
+        $unwind: {
+          path: "$cancelReason",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $lookup: {
           from: "bookings",
@@ -99,7 +154,7 @@ export const getAllTickets = async (req: Request, res: Response) => {
           as: "booking",
         },
       },
-      { $unwind: "$booking" },
+      { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "bookingpayments",
@@ -108,10 +163,12 @@ export const getAllTickets = async (req: Request, res: Response) => {
           as: "payment",
         },
       },
-      { $unwind: {
-        path:"$payment",
-        preserveNullAndEmptyArrays:true
-      } },
+      {
+        $unwind: {
+          path: "$payment",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
     ]);
 
     const totalCount = await RaiseIssue.countDocuments();
@@ -190,5 +247,103 @@ export const getRefundAmountFromBooking = async (bookingId: Types.ObjectId) => {
     return { Experttrans, userTrans };
   } catch (error: any) {
     return error.message;
+  }
+};
+
+// api for to add feedback by admin to any issue
+export const addFeedBackbyAdmin = async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
+  const { feedback } = req.body;
+  try {
+    const update = await RaiseIssue.findOneAndUpdate(
+      { _id: ObjectId(ticketId) },
+      { $set: { feedbackByAdmin: feedback } },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: update,
+      message: "Feedback added by admin",
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// reason API's
+
+export const addReason = async (req: Request, res: Response) => {
+  const { reason } = req.body;
+  if (!reason) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: "Reason is required",
+    });
+  }
+  try {
+    const newReason = await Reason.create({ reason });
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: newReason,
+      message: "new reason created",
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateReason = async (req: Request, res: Response) => {
+  const { reason } = req.body;
+  const { reasonId } = req.params;
+  try {
+    const data = await Reason.updateOne(
+      { _id: ObjectId(reasonId) },
+      { $set: { reason: reason } },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: data,
+      message: "new reason created",
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAllReasonList = async (req: Request, res: Response) => {
+  try {
+    const data = await Reason.find({});
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: data,
+      message: "fetched reason list",
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
   }
 };

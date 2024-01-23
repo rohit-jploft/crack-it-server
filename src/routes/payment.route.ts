@@ -3,6 +3,7 @@ import {
   checkAndVerifyPayment,
   createPaymentIntent,
   createTransactionForMobileIntentCreatedByApp,
+  payAndProceedWhenAmountZero,
   payThroughWallet,
   payThroughWalletMobileApi,
 } from "../controllers/Payment/payment.controller";
@@ -15,9 +16,13 @@ router.put("/wallet", payThroughWallet);
 
 router.put("/api/mobile/wallet", payThroughWalletMobileApi);
 
+// api used to create pending transaction before proceeding for payment
 router.post(
   "/api/mobile/create/transaction/intent",
   createTransactionForMobileIntentCreatedByApp
 );
+
+// payment when amount is zero
+router.put("/booking/zero/:bookingId", payAndProceedWhenAmountZero);
 
 export default router;

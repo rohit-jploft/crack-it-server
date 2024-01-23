@@ -3,10 +3,11 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 export interface RaiseIssueData {
   booking: Types.ObjectId;
   user: Types.ObjectId;
-  ticketNo:number;
+  ticketNo: string;
   query: string;
-  reason: string;
+  reason: Types.ObjectId;
   attachment: string;
+  feedbackByAdmin: string;
   status: "OPEN" | "RESOLVED" | "IN_PROGRESS";
   isDeleted: boolean;
 }
@@ -22,8 +23,9 @@ const RaiseIssueSchema: Schema<RaiseIssueDocument> =
         type: Schema.Types.ObjectId,
         ref: "Booking",
       },
-      ticketNo:{
-        type:Number
+      ticketNo: {
+        type: String,
+        default:''
       },
       user: {
         type: Schema.Types.ObjectId,
@@ -33,7 +35,12 @@ const RaiseIssueSchema: Schema<RaiseIssueDocument> =
         type: String,
       },
       reason: {
+        type: Schema.Types.ObjectId,
+        ref: "Reason",
+      },
+      feedbackByAdmin: {
         type: String,
+        default:""
       },
       attachment: {
         type: String,

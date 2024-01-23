@@ -4,23 +4,24 @@ import { Roles } from "../utils/role";
 interface UserData {
   firstName: string;
   lastName: string;
-  agencyName:string;
+  agencyName: string;
   phone: number;
   otp: number;
   countryCode: string;
   password: string;
-  agency:Types.ObjectId;
+  agency: Types.ObjectId;
   role?: string;
-  profilePhoto?:string;
-  timeZone?:string;
+  profilePhoto?: string;
+  timeZone?: string;
   email: string;
   webDeviceToken: string;
-  referBy:Types.ObjectId;
+  isLoggedInFirstTime:boolean;
+  referBy: Types.ObjectId;
   appDeviceToken: string;
   termAndConditions: boolean;
   isPhoneVerified?: boolean;
   isEmailVerified?: boolean;
-  isExpertProfileVerified:boolean;
+  isExpertProfileVerified: boolean;
   isDeleted?: boolean;
 }
 
@@ -35,20 +36,20 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       trim: true,
       default: "",
     },
-    agencyName:{
-      type:String
+    agencyName: {
+      type: String,
     },
     lastName: {
       type: String,
       trim: true,
       default: "",
     },
-    agency:{
-        type:Schema.Types.ObjectId,
-        ref:"User"
+    agency: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    otp:{
-      type:Number,
+    otp: {
+      type: Number,
     },
     phone: {
       type: Number,
@@ -58,23 +59,27 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     countryCode: {
       type: String,
     },
+    isLoggedInFirstTime: {
+      type: Boolean,
+      default: true,
+    },
     role: {
       type: String,
-      enum:["SUPER_ADMIN", "USER", "ADMIN", "EXPERT", "AGENCY"],
-      default:Roles.USER,
+      enum: ["SUPER_ADMIN", "USER", "ADMIN", "EXPERT", "AGENCY"],
+      default: Roles.USER,
     },
-    profilePhoto:{
-      type:String,
-      default:""
+    profilePhoto: {
+      type: String,
+      default: "",
     },
-    webDeviceToken:{
-        type:String
+    webDeviceToken: {
+      type: String,
     },
-    appDeviceToken:{
-        type:String
+    appDeviceToken: {
+      type: String,
     },
-    timeZone:{
-      type:String,
+    timeZone: {
+      type: String,
     },
     email: {
       type: String,
@@ -82,16 +87,16 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       default: "",
       unique: true,
     },
-    isExpertProfileVerified:{
-      type:Boolean,
-      default:false
+    isExpertProfileVerified: {
+      type: Boolean,
+      default: false,
     },
     password: {
       type: String,
     },
-    referBy:{
-      type:Schema.Types.ObjectId,
-      ref:"User"
+    referBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
     isPhoneVerified: {
       type: Boolean,
@@ -106,8 +111,8 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
       require: true,
     },
     isDeleted: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
