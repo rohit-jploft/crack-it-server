@@ -29,7 +29,6 @@ export const saveRating = async () => {
         { user: ObjectId(exp.user._id) },
         { rating: exp.rating },{new:true}
       );
-      console.log(update, 'update')
     }
   } catch (error) {
     return error;

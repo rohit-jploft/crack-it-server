@@ -31,6 +31,7 @@ import {
 } from "./scheduler/bookingScheduler";
 import Wallet from "./models/wallet.model";
 import { saveRating } from "./scheduler/ratingSaveScheduler";
+import { getRefundAmountFromBooking } from "./controllers/RaiseIssue/raiseIssue.controller";
 
 //dot env
 dotenv.config();
@@ -202,6 +203,7 @@ async function connectDb() {
       autoIndex: true,
     });
     console.log("database connected");
+    await getRefundAmountFromBooking(ObjectId('65b0a29f4250c30a36c7af73'))
   } catch (error) {
     console.log(error);
     process.exit(1);

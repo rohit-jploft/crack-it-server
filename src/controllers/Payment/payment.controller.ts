@@ -14,6 +14,9 @@ import {
 } from "../Wallet/wallet.controller";
 import { getSuperAdminId } from "../../helper/impFunctions";
 import { payWithWallet } from "../../schemas/wallet.schema";
+import { sendMailForMeetingUpdate } from "../../helper/mailService";
+import { getDateInDateStamp, getTimeInDateStamp } from "../../helper/helper";
+import User from "../../models/user.model";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require("stripe")(stripeSecretKey);
@@ -104,6 +107,53 @@ export const checkAndVerifyPayment = async (req: Request, res: Response) => {
         "web",
         NoticationMessage.ConfirmedBooking.message,
         { targetId: booking?._id },
+        {}
+      );
+      const userObj: any = await User.findOne({
+        _id: ObjectId(booking.user.toString()),
+      });
+      const expertObj:any = await User.findOne({
+        _id: ObjectId(booking.expert.toString()),
+      });
+      const sendEmail = await sendMailForMeetingUpdate(
+        userObj?.email,
+        "Booking Confirmed",
+        `Dear ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        <br/>
+        Your booking has been Confirmed which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+  
+        Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/> <br/>
+        Thank you
+        Crack-it
+        `, 
+        {}
+      );
+      const sendEmailExp = await sendMailForMeetingUpdate(
+        expertObj?.email,
+        "Booking Confirmed",
+        `Dear ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Your booking has been confirmed which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+        Service Requester - ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/>
+        <br/>
+        Thank you
+        <br/>
+        Crack-it
+        <br/>
+        `, 
         {}
       );
       return res.status(200).json({

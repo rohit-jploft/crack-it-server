@@ -247,6 +247,7 @@ export const loginUser = async (req: Request, res: Response) => {
           role,
           phone,
           isExpertProfileVerified,
+          countryCode,
         } = IsUserExist;
         const response = {
           success: true,
@@ -261,6 +262,7 @@ export const loginUser = async (req: Request, res: Response) => {
               phone,
               role,
               isExpertProfileVerified,
+              countryCode,
             },
           },
           message: "Login SuccessFully",

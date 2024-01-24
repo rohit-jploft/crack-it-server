@@ -108,7 +108,6 @@ export const getAllTickets = async (req: Request, res: Response) => {
     if (search) {
       query["$or"] = [{ ticketNo: { $regex: search, $options: "i" } }];
     }
-    console.log(query, "query");
     const getData = await RaiseIssue.aggregate([
       { $match: query },
       { $sort: { createdAt: -1 } },
@@ -188,22 +187,58 @@ export const getAllTickets = async (req: Request, res: Response) => {
   }
 };
 
+export const changeTicketStatus = async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
+  const { status } = req.body;
+  try {
+    const changeStatus = await RaiseIssue.findByIdAndUpdate(
+      ObjectId(ticketId),
+      { $set: { status: status } },
+      { new: true }
+    );
+    if (changeStatus?.status === status) {
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "status",
+        data: changeStatus,
+      });
+    } else {
+      return res.status(200).json({
+        type: "error",
+        status: 200,
+        success: false,
+        message: "not updated",
+      });
+    }
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
 export const getTheRefundPercentage = async (hoursBefore: number) => {
   let penaltyPercentage = 0;
   let expertPercentShare;
   let crackItPercentShare;
+  let userPercentage;
   if (hoursBefore >= 4) {
     penaltyPercentage = 50;
+    userPercentage = 50;
     expertPercentShare = 25;
     crackItPercentShare = 25;
   } else {
     penaltyPercentage = 75;
+    userPercentage = 25;
     expertPercentShare = 50;
     crackItPercentShare = 25;
   }
 
   return {
     penaltyPercentage,
+    userPercentage,
     expertPercentShare,
     crackItPercentShare,
   };
@@ -217,15 +252,13 @@ export const getRefundAmountFromBooking = async (bookingId: Types.ObjectId) => {
     // const combineDate = combineTimestamps(booking.date, booking.startTime);
 
     const getHourBefore = await getHoursBefore(booking.startTime);
-
+    console.log(getHourBefore, "get hours before");
     const getPercentage = await getTheRefundPercentage(getHourBefore);
     const expertrefundAmount =
-      (getPercentage.expertPercentShare * payment.totalAmount) / 100;
+      (getPercentage.expertPercentShare * payment.grandTotal) / 100;
     const userRefundAmount =
-      ((100 - getPercentage.penaltyPercentage) * payment.totalAmount) / 100;
+      (getPercentage.userPercentage * payment.grandTotal) / 100;
     const superAdmin = await User.findOne({ role: "SUPER_ADMIN" });
-    console.log(superAdmin, "superadmin");
-    console.log(booking, "booking");
 
     const Experttrans = await createTransaction(
       expertrefundAmount,
@@ -331,13 +364,45 @@ export const updateReason = async (req: Request, res: Response) => {
 };
 
 export const getAllReasonList = async (req: Request, res: Response) => {
+  const currentPage = Number(req?.query?.page) + 1 || 1;
+  let limit = Number(req?.query?.limit) || 10;
+  const skip = limit * (currentPage - 1);
   try {
-    const data = await Reason.find({});
+    const data = await Reason.find({ isDeleted: false })
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await Reason.countDocuments({ isDeleted: false });
     return res.status(200).json({
       status: 200,
       success: true,
       data: data,
+      pagination: pagination(totalCount, currentPage, limit),
       message: "fetched reason list",
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      type: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteReason = async (req: Request, res: Response) => {
+  const { reasonId } = req.params;
+  try {
+    const deleteReasonFromDb = await Reason.findOneAndUpdate(
+      {
+        _id: ObjectId(reasonId),
+      },
+      { $set: { isDeleted: true } }
+    );
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Reason deleted",
+      data: deleteReasonFromDb,
     });
   } catch (error: any) {
     return res.status(200).json({

@@ -27,7 +27,6 @@ export function getTimeInDateStamp(time: string): string {
   if (month < 10) {
     month = "0" + month.toString();
   }
-  console.log(`${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`);
   return `${today.getFullYear()}-${month}-${today.getDate()}T${time}Z`
 }
 export function getDateInDateStamp(date: string): Date {
@@ -58,12 +57,10 @@ export function addMinutesToTime(timeString:string, minutesToAdd:number) {
   }
 }
 export async function getHoursBefore(startTime:Date) {
-  console.log(startTime, "starttime")
   const currentTime = new Date();
   let bookStartTime = new Date(startTime)
   const timeDifference = bookStartTime.getTime() - currentTime.getTime();
   const hoursBefore = timeDifference / (1000 * 60 * 60); // Milliseconds to hours
-  console.log(hoursBefore, "hello")
   return hoursBefore;
 }
 
@@ -95,7 +92,6 @@ export function combineTimestamps(dateTimestamp:Date, timeTimestamp:Date) {
 /// time zone symbol and get the timeZone format
 export function getTheTimeZoneConvertedTime(dateTimeStamp:Date, timeZoneSymbol:string, isUtcToOther:boolean){
      const getOffSetTime:any = timeZoneList.find(t => t.symbol === timeZoneSymbol);
-     console.log(getOffSetTime)
      if(isUtcToOther){
       const convertTime = addMinutesToDate(dateTimeStamp, getOffSetTime?.offsetMinutes);
      return convertTime;
@@ -113,9 +109,7 @@ export function getTheFinalStartTimeConvertedInDesiredTimeZone(date:Date, time:s
   const year = date.getFullYear();
   const month = date.getMonth();
   const dateNum = date.getDate();
-  console.log("year - ", year)
-  console.log("month - ", month)
-  console.log("dateNum - ", dateNum)
+
   const combinedTimeAndDate = new Date(year, month, dateNum, hours, mins,secs, 0);
 
   const convertedTime = getTheTimeZoneConvertedTime(combinedTimeAndDate, timeZone, false);

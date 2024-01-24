@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
     const splitUrl = req.baseUrl.split("/");
     console.log(splitUrl[splitUrl.length - 1]);
     const dir = "uploads/" + splitUrl[splitUrl.length - 1];
-    console.log(dir);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

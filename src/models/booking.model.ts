@@ -22,6 +22,7 @@ export interface BookingData {
   skills: Types.ObjectId[];
   cancelReason: Types.ObjectId;
   cancelComment:string;
+  cancelBy:string;
   status:
     | "REQUESTED"
     | "CONFIRMED"
@@ -131,6 +132,9 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     cancelComment: {
       type:String
     },
+    cancelBy:{
+      type:String,
+    }
   },
   { timestamps: true }
 );

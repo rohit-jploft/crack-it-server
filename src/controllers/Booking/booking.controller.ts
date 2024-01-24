@@ -32,6 +32,8 @@ import Wallet from "../../models/wallet.model";
 import { getAgencyOfAnyExpert } from "../../helper/bookingHelper";
 import Category from "../../models/category.model";
 import User from "../../models/user.model";
+import WalletTransaction from "../../models/walletTransactions.model";
+import { sendMailForMeetingUpdate } from "../../helper/mailService";
 
 export const createBooking = async (req: Request, res: Response) => {
   const data = req.body;
@@ -139,6 +141,53 @@ export const createBooking = async (req: Request, res: Response) => {
       });
 
       const savedPayment = await bookPaymentObj.save();
+      const userObj: any = await User.findOne({
+        _id: ObjectId(value.user.toString()),
+      });
+      const expertObj:any = await User.findOne({
+        _id: ObjectId(value.expert.toString()),
+      });
+      const sendEmail = await sendMailForMeetingUpdate(
+        userObj?.email,
+        "New Booking",
+        `Dear ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        <br/>
+        You have requested a new booking at ${getTimeInDateStamp(
+          savedBooking.startTime.toString()
+        )}
+        <br/>
+
+        Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(savedBooking.date.toString())}
+        <br/> <br/>
+        Thank you
+        Crack-it
+        `, 
+        {}
+      );
+      const sendEmailExp = await sendMailForMeetingUpdate(
+        expertObj?.email,
+        "New Booking",
+        `Dear ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        You have recieved a new booking at ${getTimeInDateStamp(
+          savedBooking.startTime.toString()
+        )}
+        <br/>
+        Service Requester - ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(savedBooking.date.toString())}
+        <br/>
+        <br/>
+        Thank you
+        <br/>
+        Crack-it
+        <br/>
+        `, 
+        {}
+      );
       return res.status(200).json({
         status: 200,
         success: true,
@@ -498,9 +547,23 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
     const ExpertWallet: any = await Wallet.findOne({ user: booking.expert });
 
     if (ExpertWallet.amount < 25) {
-      return {
-        isLow: false,
-      };
+      const expTrans = new WalletTransaction({
+        user: booking.expert,
+        otherUser: superAdminId,
+        amount: 25,
+        title: "Cancellation charge",
+        paymentMethod: "DEBIT",
+        booking: ObjectId(bookingId.toString()),
+        status: "success",
+      });
+      await expTrans.save();
+
+      const expWallet: any = await Wallet.findOne({
+        user: ObjectId(booking.expert),
+      });
+      expWallet.amount = expWallet.amount - 25;
+      await expWallet.save();
+      return { expTrans };
     } else {
       var trans = await createTransaction(
         25,
@@ -511,7 +574,7 @@ export const ifCancelByExpertThanFirstChargeThanRefund = async (
         ObjectId(bookingId.toString())
       );
       var userTrans = await createTransaction(
-        bookingPayment.totalAmount,
+        bookingPayment.grandTotal,
         "CREDIT",
         booking.user,
         superAdminId,
@@ -531,6 +594,9 @@ export const cancelBooking = async (req: Request, res: Response) => {
   const superAdminId = await getSuperAdminId();
   try {
     const booking: any = await Booking.findById(ObjectId(bookingId));
+    const payment: any = await BookingPayment.findOne({
+      booking: ObjectId(bookingId),
+    });
 
     if (role === "USER" && booking.status === "CONFIRMED") {
       const ref = await getRefundAmountFromBooking(booking._id);
@@ -541,23 +607,24 @@ export const cancelBooking = async (req: Request, res: Response) => {
         res,
         ObjectId(bookingId)
       );
-      if (check && !check?.isLow) {
-        return res.status(201).json({
-          status: 201,
-          success: false,
-          message: "you need to have $25 to cancel the meeting",
-        });
-      }
     }
     if (role === "EXPERT" && booking.status === "CONFIRMED") {
       // + 50 is for store creedit
       const trans = await createTransaction(
-        booking.grandTotal + 50,
+        payment.grandTotal,
         "CREDIT",
         booking.user,
         superAdminId,
         "Refund for cancellation by expert",
-        ObjectId(bookingId)
+        ObjectId(bookingId.toString())
+      );
+      var storeCreditTrans = await createTransaction(
+        50,
+        "CREDIT",
+        booking.user,
+        superAdminId,
+        "Store credit",
+        ObjectId(bookingId.toString())
       );
       console.log(trans, "trans");
     }
@@ -566,6 +633,54 @@ export const cancelBooking = async (req: Request, res: Response) => {
     booking.status = "CANCELLED";
     booking.cancelReason = reason ? reason : "";
     booking.cancelComment = comment ? comment : "";
+    booking.cancelBy = role;
+    const userObj: any = await User.findOne({
+      _id: ObjectId(booking.user.toString()),
+    });
+    const expertObj:any = await User.findOne({
+      _id: ObjectId(booking.expert.toString()),
+    });
+    const sendEmail = await sendMailForMeetingUpdate(
+      userObj?.email,
+      "Booking Cancelled",
+      `Dear ${userObj.firstName} ${userObj.lastName}
+      <br/>
+      <br/>
+      Your booking has been cancelled which was at ${getTimeInDateStamp(
+        booking.startTime.toString()
+      )}
+      <br/>
+
+      Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+      <br/>
+      Date - ${getDateInDateStamp(booking.date.toString())}
+      <br/> <br/>
+      Thank you
+      Crack-it
+      `, 
+      {}
+    );
+    const sendEmailExp = await sendMailForMeetingUpdate(
+      expertObj?.email,
+      "Booking Cancelled",
+      `Dear ${expertObj.firstName} ${expertObj.lastName}
+      <br/>
+      Your booking has been cancelled which was at ${getTimeInDateStamp(
+        booking.startTime.toString()
+      )}
+      <br/>
+      Service Requester - ${userObj.firstName} ${userObj.lastName}
+      <br/>
+      Date - ${getDateInDateStamp(booking.date.toString())}
+      <br/>
+      <br/>
+      Thank you
+      <br/>
+      Crack-it
+      <br/>
+      `, 
+      {}
+    );
     await createNotification(
       ObjectId(booking.user),
       ObjectId(booking.expert),
@@ -576,10 +691,12 @@ export const cancelBooking = async (req: Request, res: Response) => {
       { targetId: booking._id }
     );
     await booking.save();
-    await Chat.findOneAndUpdate(
-      { booking: ObjectId(bookingId) },
-      { isClosed: true }
-    );
+    if (booking.status === "CONFIRMED") {
+      await Chat.findOneAndUpdate(
+        { booking: ObjectId(bookingId) },
+        { isClosed: true }
+      );
+    }
     return res.status(200).json({
       status: 200,
       success: true,
@@ -628,6 +745,53 @@ export const acceptBooking = async (req: Request, res: Response) => {
       //     ObjectId(bookingId)
       //   );
       // }
+      const userObj: any = await User.findOne({
+        _id: ObjectId(booking.user.toString()),
+      });
+      const expertObj:any = await User.findOne({
+        _id: ObjectId(booking.expert.toString()),
+      });
+      const sendEmail = await sendMailForMeetingUpdate(
+        userObj?.email,
+        "Booking Cancelled",
+        `Dear ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        <br/>
+        Your booking has been Accepted which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+  
+        Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/> <br/>
+        Thank you
+        Crack-it
+        `, 
+        {}
+      );
+      const sendEmailExp = await sendMailForMeetingUpdate(
+        expertObj?.email,
+        "Booking Cancelled",
+        `Dear ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Your have accepted booking request which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+        Service Requester - ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/>
+        <br/>
+        Thank you
+        <br/>
+        Crack-it
+        <br/>
+        `, 
+        {}
+      );
       return res.status(200).json({
         status: 200,
         success: true,
@@ -668,6 +832,53 @@ export const declinedBooking = async (req: Request, res: Response) => {
       //     ObjectId(bookingId)
       //   );
       // }
+      const userObj: any = await User.findOne({
+        _id: ObjectId(booking.user.toString()),
+      });
+      const expertObj:any = await User.findOne({
+        _id: ObjectId(booking.expert.toString()),
+      });
+      const sendEmail = await sendMailForMeetingUpdate(
+        userObj?.email,
+        "Booking Declied",
+        `Dear ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        <br/>
+        Your booking has been declined by Expert which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+  
+        Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/> <br/>
+        Thank you
+        Crack-it
+        `, 
+        {}
+      );
+      const sendEmailExp = await sendMailForMeetingUpdate(
+        expertObj?.email,
+        "Booking Declied",
+        `Dear ${expertObj.firstName} ${expertObj.lastName}
+        <br/>
+        You have declined booking request which is at ${getTimeInDateStamp(
+          booking.startTime.toString()
+        )}
+        <br/>
+        Service Requester - ${userObj.firstName} ${userObj.lastName}
+        <br/>
+        Date - ${getDateInDateStamp(booking.date.toString())}
+        <br/>
+        <br/>
+        Thank you
+        <br/>
+        Crack-it
+        <br/>
+        `, 
+        {}
+      );
       return res.status(200).json({
         status: 200,
         success: true,
@@ -844,5 +1055,3 @@ export const bookingPageDashboard = async (req: Request, res: Response) => {
     });
   }
 };
-
-

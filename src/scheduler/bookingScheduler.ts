@@ -2,11 +2,17 @@ import { createConversation } from "../controllers/Chat/chat.controller";
 import { createNotification } from "../controllers/Notifications/Notification.controller";
 import { createTransaction } from "../controllers/Wallet/wallet.controller";
 import { ObjectId } from "../helper/RequestHelper";
+import { getTimeInDateStamp } from "../helper/helper";
 import { getSuperAdminId } from "../helper/impFunctions";
+import {
+  sendEmailfromSmtp,
+  sendMailForMeetingUpdate,
+} from "../helper/mailService";
 import Booking from "../models/booking.model";
 import BookingPayment from "../models/bookingPayment.model";
 import Chat from "../models/chat.model";
 import Expert from "../models/experts.model";
+import User from "../models/user.model";
 import { NotificationType } from "../utils/NotificationType";
 import { NoticationMessage } from "../utils/notificationMessageConstant";
 
@@ -85,6 +91,40 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
           ],
           booking._id,
           agency
+        );
+        const userObj: any = await User.findOne({
+          _id: ObjectId(booking.user.toString()),
+        });
+        const expertObj:any = await User.findOne({
+          _id: ObjectId(booking.expert.toString()),
+        });
+        const sendEmail = await sendMailForMeetingUpdate(
+          userObj?.email,
+          "Chat Initiated for your upcoming booking",
+          `Dear ${userObj.firstName} ${userObj.lastName}
+          
+          Your chat has been initiated for your upcoming meeting at ${getTimeInDateStamp(
+            booking.startTime.toString()
+          )}
+          
+          Thank you
+          Crack-it
+          `, 
+          {}
+        );
+        const sendEmailExp = await sendMailForMeetingUpdate(
+          expertObj?.email,
+          "Chat Initiated for your upcoming booking",
+          `Dear ${expertObj.firstName} ${expertObj.lastName}
+          
+          Your chat has been initiated for your upcoming meeting at ${getTimeInDateStamp(
+            booking.startTime.toString()
+          )}
+          
+          Thank you
+          Crack-it
+          `, 
+          {}
         );
         if (convo && convo.isNew) {
           await createNotification(

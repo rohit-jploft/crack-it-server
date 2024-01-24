@@ -120,7 +120,6 @@ export const createTransaction = async (
       },
       { session }
     );
-    console.log(amount, "amount");
     // Save both transactions
     await userTransaction.save();
     await otherUserTransaction.save();
@@ -226,7 +225,6 @@ export const updateTransactionStatus = async (
       { booking: bookingId },
       { $set: { status: status } }
     );
-    console.log(updateStatus, "updateStatus");
     if (updateStatus.modifiedCount > 0) {
       return { type: "success", success: true, data: updateStatus };
     } else {
@@ -261,13 +259,10 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
       .populate("user", "firstName lastName")
       .populate("otherUser", "firstName lastName");
 
-    console.log(transactions, "transactions");
     const wallet = await createWallet(userId);
-    console.log(wallet, "wallet");
     const totalCount: any = await WalletTransaction.countDocuments({
       user: ObjectId(userId),
     });
-    console.log(totalCount, "totalCount");
 
     return res.status(200).json({
       success: true,
@@ -397,10 +392,10 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
 export const updateWithDrawalReq = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
-
+  console.log(id, "withdraw id")
   try {
     const withdrawal: any = await WithdrawalRequest.findById(id);
-
+    console.log(withdrawal, "withdrawal")
     if (withdrawal?.status === status) {
       return res.status(200).json({
         success: true,
@@ -409,9 +404,10 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       });
     } else {
       withdrawal.status = status;
-      const admin = await User.findOne({ role: "SUPER_ADMIN" });
+      const adminId = await getSuperAdminId();
+
       await createNotification(
-        admin?._id,
+        adminId,
         withdrawal.user,
         NoticationMessage.withDrawalApproved.title,
         NotificationType.Withdrawal,
@@ -427,7 +423,7 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
         withdrawal?.amount,
         "DEBIT",
         withdrawal?.user,
-        admin?._id,
+        adminId,
         "Withdraw",
         ObjectId(""),
         "WITHDRAWAL"
@@ -464,11 +460,9 @@ export const payWithWallet = async (req: Request, res: Response) => {
       });
     }
     let grandTotal = booking.grandTotal;
-    console.log(grandTotal, "grandTotal");
     const userWallet: any = await Wallet.findOne({
       user: ObjectId(userId.toString()),
     });
-    console.log(userWallet, "userWallet");
     if (userWallet?.amount >= grandTotal) {
       // console.log(grandTotal, "grandTotal")
 
@@ -480,7 +474,6 @@ export const payWithWallet = async (req: Request, res: Response) => {
         "Booking Payment",
         ObjectId(bookingId.toString())
       );
-      console.log(transaction);
       booking.status = "PAID";
       const mainBooking: any = await Booking.findById(ObjectId(bookingId));
       mainBooking.status = "CONFIRMED";
@@ -508,7 +501,6 @@ export const payWithWallet = async (req: Request, res: Response) => {
           ObjectId(bookingId.toString())
         );
       }
-      console.log(trans, "trans");
       return res.status(200).json({
         status: 200,
         success: true,
