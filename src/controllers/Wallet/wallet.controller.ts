@@ -16,7 +16,6 @@ import BookingPayment from "../../models/bookingPayment.model";
 import { getSuperAdminId } from "../../helper/impFunctions";
 import mongoose from "mongoose";
 
-
 export const createWallet = async (userId: string) => {
   try {
     const wallet = await Wallet.findOne({ user: ObjectId(userId) });
@@ -40,8 +39,7 @@ export const createTransaction = async (
   title: string,
   booking?: Types.ObjectId,
   txnType?: string,
-  success?: boolean,
-  
+  success?: boolean
 ) => {
   // transaction initialisation
   const session = await mongoose.startSession();
@@ -96,7 +94,7 @@ export const createTransaction = async (
         otherUser,
         title,
         status: "success",
-        paymentMethod:"WALLET",
+        paymentMethod: "WALLET",
         booking,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -113,7 +111,113 @@ export const createTransaction = async (
         otherUser: user,
         title,
         booking,
-        paymentMethod:"WALLET",
+        paymentMethod: "WALLET",
+        status: "success",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
+    // Save both transactions
+    await userTransaction.save();
+    await otherUserTransaction.save();
+
+    // Update the user's wallet balance based on the transaction type
+    if (type === "CREDIT") {
+      userWallet.amount += amount;
+    } else if (type === "DEBIT" && txnType !== "WITHDRAWAL") {
+      userWallet.amount -= amount;
+    }
+
+    // Save the updated user wallet balance
+    await userWallet.save({ session });
+    // Commit the transaction
+    await session.commitTransaction();
+    return { userTransaction, otherUserTransaction };
+  } catch (error) {
+    await session.abortTransaction();
+    return { message: "Server error", type: "error" };
+  } finally {
+    session.endSession();
+  }
+};
+export const createWithDrawalTransaction = async (
+  amount: number,
+  type: "CREDIT" | "DEBIT",
+  user: Types.ObjectId,
+  otherUser: Types.ObjectId,
+  title: string,
+  txnType?: string,
+) => {
+  // transaction initialisation
+  const session = await mongoose.startSession();
+  // start the session
+  session.startTransaction();
+  try {
+    // Ensure that user and otherUser exist and are valid ObjectId strings
+    if (!Types.ObjectId.isValid(user) || !Types.ObjectId.isValid(otherUser)) {
+      return { type: "error", message: "Invalid IDs" };
+    }
+
+    var otherUserWallet;
+    // Check the user's wallet balance
+
+    const userWallet = await Wallet.findOne({ user }).session(session);
+
+    if (!userWallet) {
+      return { type: "error", message: "User wallet not found" };
+    }
+
+    // Check the otherUser's wallet balance (only for CREDIT transactions)
+    if (type === "CREDIT") {
+      otherUserWallet = await Wallet.findOne({ user: otherUser }).session(
+        session
+      );
+      const otherUserRole = await User.findOne({ _id: otherUser });
+
+      if (!otherUserWallet) {
+        return { type: "error", message: "Other user wallet not found" };
+      }
+
+      if (
+        otherUserRole?.role !== "SUPER_ADMIN" ||
+        (txnType && txnType === "WITHDRAWAL")
+      ) {
+        if (otherUserWallet.amount < amount) {
+          return {
+            type: "error",
+            message: "Other user has insufficient funds",
+          };
+        }
+        otherUserWallet.amount -= amount;
+      }
+    }
+
+    // Create a new wallet transaction for the user
+    const userTransaction = new WalletTransaction(
+      {
+        amount,
+        type,
+        user,
+        otherUser,
+        title,
+        status: "success",
+        paymentMethod: "WALLET",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { session }
+    );
+
+    // Create a new wallet transaction for the otherUser (reverse type)
+    const otherUserTransaction = new WalletTransaction(
+      {
+        amount: amount,
+        type: type === "CREDIT" ? "DEBIT" : "CREDIT",
+        user: otherUser,
+        otherUser: user,
+        title,
+        paymentMethod: "WALLET",
         status: "success",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -154,14 +258,14 @@ export const createStripeTransaction = async (
 ) => {
   // Ensure that user and otherUser exist and are valid ObjectId strings
   if (!Types.ObjectId.isValid(user)) {
-    return { type: "error", message: "Invalid IDs", success:false };
+    return { type: "error", message: "Invalid IDs", success: false };
   }
 
   // Check the user's wallet balance
   const userWallet = await Wallet.findOne({ user });
 
   if (!userWallet) {
-    return { type: "error", message: "User wallet not found" , success:false};
+    return { type: "error", message: "User wallet not found", success: false };
   }
   // transaction initialisation
   const session = await mongoose.startSession();
@@ -202,7 +306,7 @@ export const createStripeTransaction = async (
     await session.commitTransaction();
     return {
       type: "success",
-      success:true,
+      success: true,
       message: "transactions are successfull",
       data: {
         userTransaction: newTrans,
@@ -211,7 +315,7 @@ export const createStripeTransaction = async (
     };
   } catch (error: any) {
     await session.abortTransaction();
-    return { type: "error",success:false,message: error.message };
+    return { type: "error", success: false, message: error.message };
   } finally {
     await session.endSession();
   }
@@ -392,10 +496,10 @@ export const getAllWithdrawalReq = async (req: Request, res: Response) => {
 export const updateWithDrawalReq = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
-  console.log(id, "withdraw id")
+  console.log(id, "withdraw id");
   try {
     const withdrawal: any = await WithdrawalRequest.findById(id);
-    console.log(withdrawal, "withdrawal")
+    console.log(withdrawal, "withdrawal");
     if (withdrawal?.status === status) {
       return res.status(200).json({
         success: true,
@@ -419,14 +523,13 @@ export const updateWithDrawalReq = async (req: Request, res: Response) => {
       // const wallet: any = await Wallet.findOne({ user: withdrawal.user });
       // wallet.amount = wallet.amount + withdrawal.amount;
       // await wallet.save();
-      await createTransaction(
+      await createWithDrawalTransaction(
         withdrawal?.amount,
         "DEBIT",
         withdrawal?.user,
         adminId,
         "Withdraw",
-        ObjectId(""),
-        "WITHDRAWAL"
+        "WITHDRAWAL",
       );
       await withdrawal.save();
     }
