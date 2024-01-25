@@ -16,6 +16,9 @@ interface UserData {
   email: string;
   webDeviceToken: string;
   isLoggedInFirstTime:boolean;
+  isFirstBookingDone:boolean;
+  isNewAccount:boolean;
+  showBookingGuide:boolean;
   referBy: Types.ObjectId;
   appDeviceToken: string;
   termAndConditions: boolean;
@@ -90,6 +93,18 @@ const userSchema: Schema<UserDocument> = new Schema<UserDocument>(
     isExpertProfileVerified: {
       type: Boolean,
       default: false,
+    },
+    isNewAccount:{
+      type:Boolean,
+      default:true
+    },
+    isFirstBookingDone:{
+      type:Boolean,
+      default:false
+    },
+    showBookingGuide:{
+      type:Boolean,
+      default:true
     },
     password: {
       type: String,

@@ -31,12 +31,12 @@ export const getDashboardData = async (req: Request, res: Response) => {
       {
         $unwind: "$booking",
       },
-      {
-        $match: {
-          // "booking.status":"COMPLETED"
-          "booking.status": { $in: ["COMPLETED", "CONFIRMED"] },
-        },
-      },
+      // {
+      //   $match: {
+      //     // "booking.status":"COMPLETED"
+      //     "booking.status": { $in: ["COMPLETED", "CONFIRMED"] },
+      //   },
+      // },
       {
         $group: {
           _id: null,
@@ -205,11 +205,11 @@ export const getPaymentPageStats = async (req: Request, res: Response) => {
       {
         $unwind: "$booking",
       },
-      {
-        $match: {
-          "booking.status": "CONFIRMED",
-        },
-      },
+      // {
+      //   $match: {
+      //     "booking.status": "CONFIRMED",
+      //   },
+      // },
       {
         $group: {
           _id: null,

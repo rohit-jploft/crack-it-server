@@ -64,6 +64,19 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
   try {
     // Find upcoming bookings where the chat should be started
     const upcomingBookings = await Booking.find({
+      // $or: [
+      //   {
+      //     startTime: {
+      //       $lte: new Date(currentTime.getTime() + 15 * 60000),
+      //       $gte: currentTime,
+      //     },
+      //   },
+      //   {
+      //     endTime: {
+      //       $gt: currentTime,
+      //     },
+      //   },
+      // ],
       startTime: {
         $lte: new Date(currentTime.getTime() + 15 * 60000),
         $gte: currentTime,

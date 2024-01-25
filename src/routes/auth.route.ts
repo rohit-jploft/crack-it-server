@@ -10,6 +10,7 @@ import {
   forgotPasswordsendOtp,
   getUserDetail,
   getUserProfileById,
+  logOutApi,
   loginUser,
   permanentDeleteAccount,
   setAvatarProfilePicture,
@@ -24,6 +25,9 @@ const router: Router = express.Router();
 router.post("/user/signup", createNewUser);
 router.post("/agency/signup", createNewAgency);
 router.post("/user/login", loginUser);
+
+router.put("/user/logout/:userId", logOutApi)
+
 router.put("/user/delete/:userId", deleteAccount);
 router.delete("/user/permanent/delete/:userId", permanentDeleteAccount);
 router.get("/user/detail", isAuthenticated, getUserDetail);

@@ -32,6 +32,9 @@ import {
 import Wallet from "./models/wallet.model";
 import { saveRating } from "./scheduler/ratingSaveScheduler";
 import { getRefundAmountFromBooking } from "./controllers/RaiseIssue/raiseIssue.controller";
+import User from "./models/user.model";
+import Booking from "./models/booking.model";
+import { generateRandomNumber } from "./helper/helper";
 
 //dot env
 dotenv.config();
@@ -103,7 +106,7 @@ app.use("*", (req: Request, res: Response, next: NextFunction) => {
     message: API_ENDPOINT_NOT_FOUND_ERR,
   };
   next(error);
-});  
+});
 
 // Global error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -203,7 +206,8 @@ async function connectDb() {
       autoIndex: true,
     });
     console.log("database connected");
-    await getRefundAmountFromBooking(ObjectId('65b0a29f4250c30a36c7af73'))
+
+
   } catch (error) {
     console.log(error);
     process.exit(1);

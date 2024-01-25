@@ -7,6 +7,7 @@ import Booking from "../../models/booking.model";
 import {
   addMinutesToDate,
   addMinutesToTime,
+  generateRandomNumber,
   getDateInDateStamp,
   getTheFinalStartTimeConvertedInDesiredTimeZone,
   getTheTimeZoneConvertedTime,
@@ -80,6 +81,7 @@ export const createBooking = async (req: Request, res: Response) => {
       const bookingObj = new Booking({
         user: ObjectId(value.user),
         expert: ObjectId(value.expert),
+        bookingId:generateRandomNumber(),
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
         startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(
@@ -188,6 +190,7 @@ export const createBooking = async (req: Request, res: Response) => {
         `, 
         {}
       );
+      const updateFirstMeetingDone = await User.updateMany({_id:{$in:[ObjectId(value.user), ObjectId(value.expert)]}}, {$set:{isFirstBookingDone:true, showBookingGuide:false}})
       return res.status(200).json({
         status: 200,
         success: true,
@@ -296,7 +299,7 @@ const getTimeFromDate = (date: Date) => {
 //   }
 // };
 export const getAllBooking = async (req: Request, res: Response) => {
-  const { userId, status, role, tabStatus } = req.query;
+  const { userId, status, role, tabStatus, search } = req.query;
   const currentPage = Number(req?.query?.page) + 1 || 1;
   const currentDateTime = new Date();
   let limit = Number(req?.query?.limit) || 10;
@@ -307,6 +310,9 @@ export const getAllBooking = async (req: Request, res: Response) => {
   // console.log(userId, status, role, tabStatus);
   if (!status) {
     matchQuery.status;
+  }
+  if(search){
+    matchQuery.bookingId = {$regex:search, $options:"i"}
   }
 
   if (tabStatus) {

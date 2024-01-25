@@ -85,11 +85,16 @@ export const createNewUser = async (req: Request, res: Response) => {
       });
       // save
       const newUserWallet = await createWallet(newUser._id.toString());
-
+      console.log(
+        value.referBy && Types.ObjectId.isValid(value.referBy),
+        "refer condition"
+      );
+      console.log(value.referBy, "referValue");
+      console.log(Types.ObjectId.isValid(value.referBy), "referType");
       if (value.referBy && Types.ObjectId.isValid(value.referBy)) {
         const superAdminId = await getSuperAdminId();
         // bonus to new joinee
-        await createTransaction(
+        const trans1 = await createTransaction(
           5,
           "CREDIT",
           newUser._id,
@@ -97,14 +102,17 @@ export const createNewUser = async (req: Request, res: Response) => {
           "Referal Bonus"
         );
         // rewards to old user who refered to new joinee
-        await createTransaction(
+        const trans2 = await createTransaction(
           5,
           "CREDIT",
           ObjectId(value.referBy),
           superAdminId,
           "Referal Bonus"
         );
+        console.log(trans1, "trans1")
+        console.log(trans2, "trans2")
       }
+     
       // return the success response for account creation
       return res.status(200).json({
         type: "success",
@@ -247,7 +255,10 @@ export const loginUser = async (req: Request, res: Response) => {
           role,
           phone,
           isExpertProfileVerified,
+          isNewAccount,
+          isFirstBookingDone,
           countryCode,
+          showBookingGuide,
         } = IsUserExist;
         const response = {
           success: true,
@@ -260,9 +271,12 @@ export const loginUser = async (req: Request, res: Response) => {
               lastName,
               email,
               phone,
+              isNewAccount,
+              isFirstBookingDone,
               role,
               isExpertProfileVerified,
               countryCode,
+              showBookingGuide,
             },
           },
           message: "Login SuccessFully",
@@ -274,6 +288,27 @@ export const loginUser = async (req: Request, res: Response) => {
           .json({ status: 401, type: "error", message: INCORRECT_PASSWORD });
       }
     }
+  } catch (error: any) {
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+export const logOutApi = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const userUpdate = await User.updateOne(
+      { _id: ObjectId(userId) },
+      { $set: { isNewAccount: false } },
+      { new: true }
+    );
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "updation successfull",
+    });
   } catch (error: any) {
     return res.status(403).json({
       success: false,

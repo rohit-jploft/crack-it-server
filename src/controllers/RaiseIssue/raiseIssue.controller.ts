@@ -27,7 +27,7 @@ export const createIssueTicket = async (req: Request, res: Response) => {
         return res.status(200).json({
           success: false,
           status: 206,
-          message: "Profile pic is required",
+          message: "Supporting doc is required",
         });
       }
       var media = doc[0]?.path?.replaceAll("\\", "/") || "";
@@ -151,6 +151,7 @@ export const getAllTickets = async (req: Request, res: Response) => {
           localField: "booking",
           foreignField: "_id",
           as: "booking",
+         
         },
       },
       { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },

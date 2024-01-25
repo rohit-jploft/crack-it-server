@@ -18,6 +18,7 @@ export interface BookingData {
   expert: Types.ObjectId;
   startTime: Date;
   timeZone: string;
+  bookingId: string;
   endTime: Date;
   skills: Types.ObjectId[];
   cancelReason: Types.ObjectId;
@@ -45,6 +46,10 @@ const bookingSchema: Schema<BookingDocument> = new Schema<BookingDocument>(
     expert: {
       type: Schema.Types.ObjectId,
       ref: "User",
+    },
+    bookingId:{
+      type:String,
+
     },
     jobDescription: {
       type: String,

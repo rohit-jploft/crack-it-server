@@ -552,7 +552,7 @@ export const payAndProceedWhenAmountZero = async (
       ObjectId(bookingId.toString())
     );
     console.log(transaction)
-    if (transaction && transaction.userTransaction) {
+    // if (transaction && transaction.userTransaction) {
       const updatePayment = await BookingPayment.findOneAndUpdate(
         { booking: ObjectId(bookingId) },
         { $set: { status: "PAID", paymentObj: transaction } }
@@ -563,19 +563,19 @@ export const payAndProceedWhenAmountZero = async (
         data: updatePayment,
         message: "your booking is confirmed",
       });
-    } else {
-      const booking: any = await Booking.findByIdAndUpdate(
-        ObjectId(bookingId),
-        {
-          $set: { status: "ACCEPTED" },
-        }
-      );
-      return res.status(200).json({
-        success: false,
-        status: 200,
-        message: "transaction failed",
-      });
-    }
+    // } else {
+    //   const booking: any = await Booking.findByIdAndUpdate(
+    //     ObjectId(bookingId),
+    //     {
+    //       $set: { status: "ACCEPTED" },
+    //     }
+    //   );
+    //   return res.status(200).json({
+    //     success: false,
+    //     status: 200,
+    //     message: "transaction failed",
+    //   });
+    // }
   } catch (error: any) {
     // Return error if anything goes wrong
     return res.status(403).json({
