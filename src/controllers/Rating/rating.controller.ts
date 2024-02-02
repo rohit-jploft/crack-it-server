@@ -25,20 +25,23 @@ export const rateExpert = async (req: Request, res: Response) => {
     const rate = await ExpertRating.findOne({
       ratedBy: ObjectId(value.ratedBy),
       expert: ObjectId(value.expert),
-      booking:ObjectId(value.bookingId),
-      
+      booking: ObjectId(value.bookingId),
     });
     if (rate) {
       rate.rating = value.rating;
-      rate.comment = value.comment ? value.comment : rate?.comment ? rate.comment : "";
+      rate.comment = value.comment
+        ? value.comment
+        : rate?.comment
+        ? rate.comment
+        : "";
       const updatedRating = await rate.save();
 
       const updateratedOrNot = await Booking.findByIdAndUpdate(
         ObjectId(value.bookingId.toString()),
         { isExpertRated: true },
-        {new:true}
+        { new: true }
       );
-      console.log(updateratedOrNot)
+      console.log(updateratedOrNot);
 
       await createNotification(
         value.ratedBy,
@@ -56,16 +59,16 @@ export const rateExpert = async (req: Request, res: Response) => {
       });
     } else {
       const rate = await ExpertRating.create({
-        expert:value.expert,
-        ratedBy:value.ratedBy,
-        booking:value.bookingId,
-        rating:value.rating,
-        comment:value.comment ? value.comment : ""
+        expert: value.expert,
+        ratedBy: value.ratedBy,
+        booking: value.bookingId,
+        rating: value.rating,
+        comment: value.comment ? value.comment : "",
       });
       const updateratedOrNot = await Booking.findByIdAndUpdate(
         ObjectId(value.bookingId.toString()),
         { isExpertRated: true },
-        {new:true}
+        { new: true }
       );
       return res.status(200).json({
         success: true,
@@ -88,7 +91,6 @@ export const getExpertRating = async (userId: string) => {
   const ratings = await ExpertRating.find({ expert: ObjectId(userId) });
   let avgRating;
   let totalRating = 0;
-  console.log(ratings, "rating data")
   if (ratings.length > 0) {
     for (let rating of ratings) {
       totalRating = totalRating + rating.rating;
@@ -98,6 +100,12 @@ export const getExpertRating = async (userId: string) => {
   } else {
     return 0;
   }
+};
+export const getNoOfRatingOfExpert = async (userId: string) => {
+  const noOfrating = await ExpertRating.countDocuments({
+    expert: ObjectId(userId),
+  });
+  return noOfrating;
 };
 export const getAgencyRating = async (agencyId: string) => {
   const ratings = await AgencyRating.find({ agency: ObjectId(agencyId) });

@@ -293,6 +293,7 @@ export const payThroughWallet = async (req: Request, res: Response) => {
             "Booking Payment",
             "pending"
           );
+          console.log(trans)
           if (trans && trans.success) {
             return res.status(200).json({
               status: 200,

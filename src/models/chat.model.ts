@@ -45,7 +45,7 @@ const chatSchema = new Schema<IChat>({
     default: false,
   },
   // Define other fields here
-});
+}, {timestamps:true});
 
 const Chat = model<IChat>("Chat", chatSchema);
 

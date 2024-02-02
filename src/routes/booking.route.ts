@@ -2,6 +2,7 @@ import express, { Router } from "express";
 
 import { isAuthenticated } from "../middlewares/checkAuth";
 import {
+  ReBookingWithCancelledBoooking,
   acceptBooking,
   bookingPageDashboard,
   cancelBooking,
@@ -16,6 +17,8 @@ import upload from "../middlewares/fileUploader";
 const router: Router = express.Router();
 
 router.post("/create", upload.fields([]), createBooking);
+router.post("/re-booking/:bookingId", ReBookingWithCancelledBoooking);
+
 router.get("/get-all", getAllBooking);
 router.get("/single/:bookingId", getSingleBookingDetail);
 router.put("/cancel/:bookingId", cancelBooking);

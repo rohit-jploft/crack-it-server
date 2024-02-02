@@ -42,9 +42,7 @@ export const createTransaction = async (
   success?: boolean
 ) => {
   // transaction initialisation
-  const session = await mongoose.startSession();
-  // start the session
-  session.startTransaction();
+
   try {
     // Ensure that user and otherUser exist and are valid ObjectId strings
     if (!Types.ObjectId.isValid(user) || !Types.ObjectId.isValid(otherUser)) {
@@ -54,7 +52,7 @@ export const createTransaction = async (
     var otherUserWallet;
     // Check the user's wallet balance
 
-    const userWallet = await Wallet.findOne({ user }).session(session);
+    const userWallet = await Wallet.findOne({ user })
 
     if (!userWallet) {
       return { type: "error", message: "User wallet not found" };
@@ -62,9 +60,7 @@ export const createTransaction = async (
 
     // Check the otherUser's wallet balance (only for CREDIT transactions)
     if (type === "CREDIT") {
-      otherUserWallet = await Wallet.findOne({ user: otherUser }).session(
-        session
-      );
+      otherUserWallet = await Wallet.findOne({ user: otherUser })
       const otherUserRole = await User.findOne({ _id: otherUser });
 
       if (!otherUserWallet) {
@@ -98,8 +94,7 @@ export const createTransaction = async (
         booking,
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      { session }
+      }
     );
 
     // Create a new wallet transaction for the otherUser (reverse type)
@@ -115,8 +110,7 @@ export const createTransaction = async (
         status: "success",
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      { session }
+      }
     );
     // Save both transactions
     await userTransaction.save();
@@ -130,15 +124,15 @@ export const createTransaction = async (
     }
 
     // Save the updated user wallet balance
-    await userWallet.save({ session });
+    await userWallet.save();
     // Commit the transaction
-    await session.commitTransaction();
+    // await session.commitTransaction();
     return { userTransaction, otherUserTransaction };
   } catch (error) {
-    await session.abortTransaction();
+    // await session.abortTransaction();
     return { message: "Server error", type: "error" };
   } finally {
-    session.endSession();
+    // session.endSession();
   }
 };
 export const createWithDrawalTransaction = async (
@@ -269,9 +263,9 @@ export const createStripeTransaction = async (
     return { type: "error", message: "User wallet not found", success: false };
   }
   // transaction initialisation
-  const session = await mongoose.startSession();
+  // const session = await mongoose.startSession();
   // start the session
-  session.startTransaction();
+  // session.startTransaction();
   try {
     const superAdminId = await getSuperAdminId();
     const adminSideTrans = new WalletTransaction(
@@ -285,10 +279,11 @@ export const createStripeTransaction = async (
         type: "CREDIT",
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      { session }
+      }
     );
-    await adminSideTrans.save();
+    
+    const savedAdminTrans = await adminSideTrans.save();
+    console.log(savedAdminTrans, "savedAdminTrans")
     const newTrans = new WalletTransaction(
       {
         title: title,
@@ -300,11 +295,12 @@ export const createStripeTransaction = async (
         type: "DEBIT",
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      { session }
+      }
+      // { session }
     );
-    await newTrans.save();
-    await session.commitTransaction();
+    const newsTranns = await newTrans.save();
+    console.log(newTrans, "newTranns")
+    // await session.commitTransaction();
     return {
       type: "success",
       success: true,
@@ -315,10 +311,10 @@ export const createStripeTransaction = async (
       },
     };
   } catch (error: any) {
-    await session.abortTransaction();
+    // await session.abortTransaction();
     return { type: "error", success: false, message: error.message };
   } finally {
-    await session.endSession();
+    // await session.endSession();
   }
 };
 export const updateTransactionStatus = async (
@@ -362,6 +358,7 @@ export const getUsersTransaction = async (req: Request, res: Response) => {
       .skip(skip)
       .limit(limit)
       .populate("user", "firstName lastName")
+      .populate("booking")
       .populate("otherUser", "firstName lastName");
 
     const wallet = await createWallet(userId);

@@ -64,27 +64,11 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
   try {
     // Find upcoming bookings where the chat should be started
     const upcomingBookings = await Booking.find({
-      // $or: [
-      //   {
-      //     startTime: {
-      //       $lte: new Date(currentTime.getTime() + 15 * 60000),
-      //       $gte: currentTime,
-      //     },
-      //   },
-      //   {
-      //     endTime: {
-      //       $gt: currentTime,
-      //     },
-      //   },
-      // ],
+     
       startTime: {
         $lte: new Date(currentTime.getTime() + 15 * 60000),
         $gte: currentTime,
       },
-      // endTime: {
-      //   $gt: currentTime,
-      // },
-      // date:
       status: "CONFIRMED", // Adjust this to match your criteria for initiating chat conversations
     });
     // Iterate over the upcoming bookings and start chat conversations
@@ -105,6 +89,7 @@ export const startChatForConfirmedBookingBefore15Min = async () => {
           booking._id,
           agency
         );
+        console.log(convo, "convo")
         const userObj: any = await User.findOne({
           _id: ObjectId(booking.user.toString()),
         });

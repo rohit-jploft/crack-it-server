@@ -34,7 +34,8 @@ import { saveRating } from "./scheduler/ratingSaveScheduler";
 import { getRefundAmountFromBooking } from "./controllers/RaiseIssue/raiseIssue.controller";
 import User from "./models/user.model";
 import Booking from "./models/booking.model";
-import { generateRandomNumber } from "./helper/helper";
+import { generateRandomNumber, getConvertedTimeintoUTC } from "./helper/helper";
+import { isNewMessageNotificationNeeded } from "./controllers/Chat/chat.controller";
 
 //dot env
 dotenv.config();
@@ -205,9 +206,7 @@ async function connectDb() {
       useUnifiedTopology: true,
       autoIndex: true,
     });
-    console.log("database connected");
-
-
+   isNewMessageNotificationNeeded("65b24e30f7e2065fb12a87d5")
   } catch (error) {
     console.log(error);
     process.exit(1);

@@ -8,7 +8,6 @@ import { Types } from "mongoose";
 import { createNotification } from "../Notifications/Notification.controller";
 import { NotificationType } from "../../utils/NotificationType";
 import { NoticationMessage } from "../../utils/notificationMessageConstant";
-import Notification from "../../models/notifications.model";
 
 export const createConversation = async (
   users: Types.ObjectId[],
@@ -79,18 +78,12 @@ export const getUsersConversation = async (req: Request, res: Response) => {
         { superAdmin: userId },
         { agency: userId },
       ],
-      // isClosed: false,
+      isClosed: false,
     })
-      .sort({
-        createdAt: -1,
-        isClosed: -1,
-      })
-      .populate("booking")
       .populate("participants", "firstName lastName role profilePhoto")
       .populate("admin", "firstName lastName role")
       .populate("superAdmin", "firstName lastName role")
-      .populate("agency", "agencyName role")
-      .sort({ createdAt: -1 });
+      .populate("agency", "agencyName role").sort({createdAt:-1});
     const finalList = await Promise.all(
       chatConvo.map(async (chat: any) => {
         // const rating = await getExpertRating(expert.user._id.toString());
@@ -126,20 +119,6 @@ export const getUsersConversation = async (req: Request, res: Response) => {
     });
   }
 };
-export const isNewMessageNotificationNeeded = async (chatId: string) => {
-  const chatObj: any = await Notification.findOne({
-    "data.targetId": chatId,
-    isRead: false,
-  });
-  if (chatObj) {
-    chatObj.createdAt = new Date();
-    chatObj.updatedAt = new Date();
-    await chatObj.save();
-    return false;
-  } else {
-    return true;
-  }
-};
 export const sendMessage = async (req: Request, res: Response) => {
   const data = req.body;
 
@@ -171,20 +150,15 @@ export const sendMessage = async (req: Request, res: Response) => {
     if (chatObj && chatObj.participants) {
       for (let cha of chatObj?.participants) {
         if (value.sender !== cha.toString()) {
-          const isNewNotiNeeded = await isNewMessageNotificationNeeded(
-            value.chat
+          await createNotification(
+            ObjectId(value.sender),
+            ObjectId(cha.toString()),
+            NoticationMessage.newMessage.title,
+            NotificationType.Chat,
+            "web",
+            NoticationMessage.newMessage.message,
+            { targetId: value.chat }
           );
-          if (isNewNotiNeeded) {
-            await createNotification(
-              ObjectId(value.sender),
-              ObjectId(cha.toString()),
-              NoticationMessage.newMessage.title,
-              NotificationType.Chat,
-              "web",
-              NoticationMessage.newMessage.message,
-              { targetId: value.chat }
-            );
-          }
         }
       }
     }
@@ -204,13 +178,12 @@ export const sendMessage = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const getConvoMessage = async (req: Request, res: Response) => {
   const { convoId } = req.params;
   try {
     const convo = await Message.find({
       chat: ObjectId(convoId),
-    }).populate("sender", "_id firstName lastName profilePhoto role");
+    }).populate("sender", "_id firstName lastName profilePhoto");
     return res.status(200).json({
       success: true,
       status: 200,
@@ -406,9 +379,7 @@ export const getChatFromMeetingId = async (req: Request, res: Response) => {
   try {
     const chatWindow: any = await Chat.findOne({
       booking: ObjectId(meetingId),
-    })
-      .populate("participants", "_id firstName lastName profilePhoto role")
-      .populate("agency", "_id firstName lastName profilePhoto");
+    });
     if (!chatWindow) {
       return res.status(208).json({
         success: false,
@@ -417,13 +388,12 @@ export const getChatFromMeetingId = async (req: Request, res: Response) => {
       });
     }
     return res.status(200).json({
-      success: true,
-      status: 200,
-      data: {
-        chat: chatWindow._id,
-        chatObj: chatWindow,
-      },
-      message: "Chat details fetched successfully",
+        success: true,
+        status: 200,
+        data: {
+          chat: chatWindow._id,
+        },
+        message: "Chat details fetched successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong

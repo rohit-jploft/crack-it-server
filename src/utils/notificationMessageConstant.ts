@@ -30,5 +30,9 @@ export const NoticationMessage = {
   newMessage:{
     title:"New Message",
     message:"You have a received new message"
+  },
+  reBookingIfCancelledByExpert:{
+    title:"Re-booking",
+    message:"You can Re-book your cancelled meeting by choosing another expert"
   }
 };

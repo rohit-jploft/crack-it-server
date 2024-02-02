@@ -200,9 +200,9 @@ export const createNewAgency = async (req: Request, res: Response) => {
 };
 
 export const loginUser = async (req: Request, res: Response) => {
-  let { email, password, role } = req.body;
+  let { email, password, role, appDeviceToken} = req.body;
   // check validation error using JOI
-  const { error, value } = loginSchema.validate({ email, password });
+  const { error, value } = loginSchema.validate({ email, password, appDeviceToken });
 
   // Return if any validation error
   if (error) {
@@ -260,6 +260,8 @@ export const loginUser = async (req: Request, res: Response) => {
           countryCode,
           showBookingGuide,
         } = IsUserExist;
+        IsUserExist.appDeviceToken = appDeviceToken;
+        await IsUserExist.save()
         const response = {
           success: true,
           status: 200,

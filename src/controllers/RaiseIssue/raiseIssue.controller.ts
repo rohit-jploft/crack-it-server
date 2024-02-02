@@ -21,16 +21,14 @@ import Reason from "../../models/reasons.model";
 export const createIssueTicket = async (req: Request, res: Response) => {
   const data = req.body;
   try {
-    if (req?.files) {
+    if (req?.files && req?.files) {
       var { doc }: any = req?.files;
-      if (!doc) {
-        return res.status(200).json({
-          success: false,
-          status: 206,
-          message: "Supporting doc is required",
-        });
+
+      if (doc && doc.length > 0) {
+        var media = doc.length > 0 ? doc[0]?.path?.replaceAll("\\", "/") : "";
+      } else {
+        media = "";
       }
-      var media = doc[0]?.path?.replaceAll("\\", "/") || "";
     }
     const { error, value } = raiseTicketSchema.validate(data);
 
@@ -151,7 +149,6 @@ export const getAllTickets = async (req: Request, res: Response) => {
           localField: "booking",
           foreignField: "_id",
           as: "booking",
-         
         },
       },
       { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
@@ -313,7 +310,7 @@ export const addFeedBackbyAdmin = async (req: Request, res: Response) => {
 // reason API's
 
 export const addReason = async (req: Request, res: Response) => {
-  const { reason } = req.body;
+  const { reason, role } = req.body;
   if (!reason) {
     return res.status(200).json({
       type: "error",
@@ -322,7 +319,7 @@ export const addReason = async (req: Request, res: Response) => {
     });
   }
   try {
-    const newReason = await Reason.create({ reason });
+    const newReason = await Reason.create({ reason, role });
 
     return res.status(200).json({
       status: 200,
@@ -340,12 +337,12 @@ export const addReason = async (req: Request, res: Response) => {
 };
 
 export const updateReason = async (req: Request, res: Response) => {
-  const { reason } = req.body;
+  const { reason, role } = req.body;
   const { reasonId } = req.params;
   try {
     const data = await Reason.updateOne(
       { _id: ObjectId(reasonId) },
-      { $set: { reason: reason } },
+      { $set: { reason: reason, role: role } },
       { new: true }
     );
 
@@ -368,10 +365,11 @@ export const getAllReasonList = async (req: Request, res: Response) => {
   const currentPage = Number(req?.query?.page) + 1 || 1;
   let limit = Number(req?.query?.limit) || 10;
   const skip = limit * (currentPage - 1);
+  const { role } = req.query;
+  var query: any = { isDeleted: false };
+  if (role) query.role = role;
   try {
-    const data = await Reason.find({ isDeleted: false })
-      .skip(skip)
-      .limit(limit);
+    const data = await Reason.find(query).skip(skip).limit(limit);
 
     const totalCount = await Reason.countDocuments({ isDeleted: false });
     return res.status(200).json({

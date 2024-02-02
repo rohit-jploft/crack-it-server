@@ -2,6 +2,7 @@ import { model, Schema, Document, Model, Types } from "mongoose";
 
 export interface ReasonData {
   reason: string;
+  role: string;
   isDeleted: boolean;
 }
 
@@ -14,6 +15,9 @@ const ReasonSchema: Schema<ReasonDocument> = new Schema<ReasonDocument>(
     reason: {
       type: String,
       required: true,
+    },
+    role:{
+      type:String
     },
     isDeleted: {
       type: Boolean,

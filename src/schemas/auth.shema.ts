@@ -50,10 +50,12 @@ const AgencysignupSchema: Joi.ObjectSchema<AgencysignUpDto> =
 interface loginDto {
   email: string;
   password: string;
+  appDeviceToken: string;
   role: string;
 }
 const loginSchema: Joi.ObjectSchema<loginDto> = Joi.object<loginDto>().keys({
   password: Joi.string().required(),
+  appDeviceToken:Joi.string(),
   email: Joi.string().email().required(),
   role: Joi.string(),
 });

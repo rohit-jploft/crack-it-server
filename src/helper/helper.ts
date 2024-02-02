@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {timeZoneList} from "../utils/constant"
+import TimeZone from "../models/timeZone.model";
 
 export function removeDoubleSlashes(inputString: string): string {
   return inputString.replace(/\\/g, "/");
@@ -116,4 +117,14 @@ export function getTheFinalStartTimeConvertedInDesiredTimeZone(date:Date, time:s
 
   return convertedTime;
 
+}
+
+export const getConvertedTimeintoUTC = (timeStamp:string, timeZone:string) => {
+    const getOffSetTime:any = timeZoneList.find(({symbol}) => symbol == timeZone);
+    console.log(getOffSetTime, "getOffSetTime")
+    const converted = new Date(timeStamp);
+    console.log(converted, "before conversion")
+    converted.setMinutes((converted.getMinutes())-(getOffSetTime.offsetMinutes));
+    console.log(converted, "after conversion")
+    return converted;
 }

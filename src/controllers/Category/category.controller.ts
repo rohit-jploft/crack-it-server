@@ -204,7 +204,7 @@ export const getAllCategoryWithNoOfExpert = async (
         finalRes.push({
           category: cat,
           noOfExpert: noOfExp,
-          averageRating: ratingObj.rating,
+          averageRating: ratingObj.rating?.toFixed(1),
         });
       } else {
         return res.status(200).json({

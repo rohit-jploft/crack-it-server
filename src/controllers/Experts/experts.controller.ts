@@ -5,7 +5,10 @@ import { Types } from "mongoose";
 import Expert, { ExpertsDocument } from "../../models/experts.model";
 // import expertSchema from "../../schemas/experts.schema";
 import User from "../../models/user.model";
-import { getExpertRating } from "../Rating/rating.controller";
+import {
+  getExpertRating,
+  getNoOfRatingOfExpert,
+} from "../Rating/rating.controller";
 import { expertSchema } from "../../schemas/experts.schema";
 import { pagination } from "../../helper/pagination";
 
@@ -75,12 +78,14 @@ export const getExpertProfile = async (req: Request, res: Response) => {
       .populate("agency", "-password")
       .populate("jobCategory", "title");
     const rating: any = await getExpertRating(userId.toString());
+    const noOfRating = await getNoOfRatingOfExpert(userId.toString());
     return res.status(200).json({
       status: 200,
       success: true,
       data: {
         expert: getExpertsData,
         rating,
+        noOfRatingsGiven: noOfRating,
       },
       message: "Experts profile detail",
     });

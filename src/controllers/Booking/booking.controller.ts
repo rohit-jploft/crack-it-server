@@ -8,6 +8,7 @@ import {
   addMinutesToDate,
   addMinutesToTime,
   generateRandomNumber,
+  getConvertedTimeintoUTC,
   getDateInDateStamp,
   getTheFinalStartTimeConvertedInDesiredTimeZone,
   getTheTimeZoneConvertedTime,
@@ -81,7 +82,7 @@ export const createBooking = async (req: Request, res: Response) => {
       const bookingObj = new Booking({
         user: ObjectId(value.user),
         expert: ObjectId(value.expert),
-        bookingId:generateRandomNumber(),
+        bookingId: generateRandomNumber(),
         jobCategory: value.jobCategory,
         jobDescription: value.jobDescription ? value.jobDescription : "",
         startTime: getTheFinalStartTimeConvertedInDesiredTimeZone(
@@ -146,7 +147,7 @@ export const createBooking = async (req: Request, res: Response) => {
       const userObj: any = await User.findOne({
         _id: ObjectId(value.user.toString()),
       });
-      const expertObj:any = await User.findOne({
+      const expertObj: any = await User.findOne({
         _id: ObjectId(value.expert.toString()),
       });
       const sendEmail = await sendMailForMeetingUpdate(
@@ -166,7 +167,7 @@ export const createBooking = async (req: Request, res: Response) => {
         <br/> <br/>
         Thank you
         Crack-it
-        `, 
+        `,
         {}
       );
       const sendEmailExp = await sendMailForMeetingUpdate(
@@ -187,10 +188,13 @@ export const createBooking = async (req: Request, res: Response) => {
         <br/>
         Crack-it
         <br/>
-        `, 
+        `,
         {}
       );
-      const updateFirstMeetingDone = await User.updateMany({_id:{$in:[ObjectId(value.user), ObjectId(value.expert)]}}, {$set:{isFirstBookingDone:true, showBookingGuide:false}})
+      const updateFirstMeetingDone = await User.updateMany(
+        { _id: { $in: [ObjectId(value.user), ObjectId(value.expert)] } },
+        { $set: { isFirstBookingDone: true, showBookingGuide: false } }
+      );
       return res.status(200).json({
         status: 200,
         success: true,
@@ -299,7 +303,7 @@ const getTimeFromDate = (date: Date) => {
 //   }
 // };
 export const getAllBooking = async (req: Request, res: Response) => {
-  const { userId, status, role, tabStatus, search } = req.query;
+  const { userId, status, role, tabStatus, search, admin } = req.query;
   const currentPage = Number(req?.query?.page) + 1 || 1;
   const currentDateTime = new Date();
   let limit = Number(req?.query?.limit) || 10;
@@ -311,8 +315,8 @@ export const getAllBooking = async (req: Request, res: Response) => {
   if (!status) {
     matchQuery.status;
   }
-  if(search){
-    matchQuery.bookingId = {$regex:search, $options:"i"}
+  if (search) {
+    matchQuery.bookingId = { $regex: search, $options: "i" };
   }
 
   if (tabStatus) {
@@ -370,6 +374,7 @@ export const getAllBooking = async (req: Request, res: Response) => {
       {
         $match: matchQuery,
       },
+
       {
         $lookup: {
           from: "categories", // Change to the actual name of the collection
@@ -491,7 +496,10 @@ export const getAllBooking = async (req: Request, res: Response) => {
         },
       },
       {
-        $sort: { updatedAt: -1 },
+        $sort:
+          admin && admin === "admin"
+            ? { statusOrder: 1, startTime: 1 }
+            : { updatedAt: -1 },
       },
       {
         $skip: skip,
@@ -500,6 +508,19 @@ export const getAllBooking = async (req: Request, res: Response) => {
         $limit: limit,
       },
     ];
+    if (admin && admin === "admin") {
+      aggregatePipeline[0] = {
+        $addFields: {
+          statusOrder: {
+            $cond: {
+              if: { $eq: ["$status", "CONFIRMED"] },
+              then: 1,
+              else: 2,
+            },
+          },
+        },
+      };
+    }
 
     const bookings = await Booking.aggregate([...aggregatePipeline]);
 
@@ -598,11 +619,28 @@ export const cancelBooking = async (req: Request, res: Response) => {
   const { reason, comment } = req.body;
   const { role } = req.query;
   const superAdminId = await getSuperAdminId();
+  const now = new Date();
   try {
     const booking: any = await Booking.findById(ObjectId(bookingId));
     const payment: any = await BookingPayment.findOne({
       booking: ObjectId(bookingId),
     });
+
+    // const convertedUTCTime = getConvertedTimeintoUTC(
+    //   booking.startTime.toString(),
+    //   booking.timeZone
+    // );
+    // console.log(now, 'now')
+    // console.log(convertedUTCTime, 'convertedUTCTime')
+    // console.log(now > convertedUTCTime, "final")
+    if (now >= booking.startTime) {
+      return res.status(200).json({
+        status: 200,
+        success: false,
+        type: "error",
+        message: "You can't cancel meeting if meeting time has started",
+      });
+    }
 
     if (role === "USER" && booking.status === "CONFIRMED") {
       const ref = await getRefundAmountFromBooking(booking._id);
@@ -616,14 +654,14 @@ export const cancelBooking = async (req: Request, res: Response) => {
     }
     if (role === "EXPERT" && booking.status === "CONFIRMED") {
       // + 50 is for store creedit
-      const trans = await createTransaction(
-        payment.grandTotal,
-        "CREDIT",
-        booking.user,
-        superAdminId,
-        "Refund for cancellation by expert",
-        ObjectId(bookingId.toString())
-      );
+      // const trans = await createTransaction(
+      //   payment.grandTotal,
+      //   "CREDIT",
+      //   booking.user,
+      //   superAdminId,
+      //   "Refund for cancellation by expert",
+      //   ObjectId(bookingId.toString())
+      // );
       var storeCreditTrans = await createTransaction(
         50,
         "CREDIT",
@@ -632,7 +670,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
         "Store credit",
         ObjectId(bookingId.toString())
       );
-      console.log(trans, "trans");
+      // console.log(trans, "trans");
     }
 
     // await createNewRefundRequest(ObjectId(bookingId),50 );
@@ -643,7 +681,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
     const userObj: any = await User.findOne({
       _id: ObjectId(booking.user.toString()),
     });
-    const expertObj:any = await User.findOne({
+    const expertObj: any = await User.findOne({
       _id: ObjectId(booking.expert.toString()),
     });
     const sendEmail = await sendMailForMeetingUpdate(
@@ -663,7 +701,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
       <br/> <br/>
       Thank you
       Crack-it
-      `, 
+      `,
       {}
     );
     const sendEmailExp = await sendMailForMeetingUpdate(
@@ -684,18 +722,37 @@ export const cancelBooking = async (req: Request, res: Response) => {
       <br/>
       Crack-it
       <br/>
-      `, 
+      `,
       {}
     );
-    await createNotification(
-      ObjectId(booking.user),
-      ObjectId(booking.expert),
+    const NotiSender =
+      role?.toString().toUpperCase() === "EXPERT"
+        ? ObjectId(booking.expert)
+        : ObjectId(booking.user);
+    const NotiReciever =
+      role?.toString().toUpperCase() === "USER"
+        ? ObjectId(booking.expert)
+        : ObjectId(booking.user);
+    const cancelNotification = await createNotification(
+      NotiSender,
+      NotiReciever,
       NoticationMessage.CancelBooking.title,
       NotificationType.Booking,
       "web",
       NoticationMessage.CancelBooking.message,
       { targetId: booking._id }
     );
+    if (role?.toString().toUpperCase() === "EXPERT") {
+      const RebookingNotification = await createNotification(
+        NotiSender,
+        NotiReciever,
+        NoticationMessage.reBookingIfCancelledByExpert.title,
+        NotificationType.Booking,
+        "web",
+        NoticationMessage.reBookingIfCancelledByExpert.message,
+        { targetId: booking._id }
+      );
+    }
     await booking.save();
     if (booking.status === "CONFIRMED") {
       await Chat.findOneAndUpdate(
@@ -717,12 +774,71 @@ export const cancelBooking = async (req: Request, res: Response) => {
     });
   }
 };
+async function canExpertAcceptMeeting(
+  expertId: Types.ObjectId,
+  proposedStartTime: Date,
+  proposedEndTime: Date
+): Promise<boolean> {
+  try {
+    // Check for existing confirmed bookings within the proposed time range
+    const existingBookings = await Booking.find({
+      expert: expertId,
+      status: "CONFIRMED",
+      $or: [
+        {
+          startTime: { $lt: proposedEndTime },
+          endTime: { $gt: proposedStartTime },
+        },
+        {
+          startTime: { $lt: proposedEndTime, $gte: proposedStartTime },
+        },
+        {
+          endTime: { $gt: proposedStartTime, $lte: proposedEndTime },
+        },
+      ],
+    });
 
+    // If there are no conflicting bookings, the expert can accept the new meeting
+    return existingBookings.length === 0;
+  } catch (error) {
+    // Handle any errors that may occur during the database query
+    console.error("Error checking existing bookings:", error);
+    return false; // You may choose a different approach for error handling
+  }
+}
 export const acceptBooking = async (req: Request, res: Response) => {
   let { bookingId } = req.params;
   try {
     // if payment done then
     const booking: any = await Booking.findById(ObjectId(bookingId));
+
+    // check if meeting start time has been passed then expert can not accept the booking request
+    const nowTime = new Date();
+
+    if (nowTime > booking?.startTime) {
+      return res.status(200).json({
+        status: 200,
+        success: false,
+        type: "error",
+        message:
+          "You cannot accept booking request if meeting start time has been passed",
+      });
+    }
+
+    // check if expert any meeting scheduled in that time
+    const checkConfirmedBooking = await canExpertAcceptMeeting(
+      booking.expert,
+      booking.startTime,
+      booking.endTime
+    );
+    if (!checkConfirmedBooking) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        type: "error",
+        message: "You can't accept if there is already scheduled meeting",
+      });
+    }
     if (booking?.status === "ACCEPTED") {
       return res.status(200).json({
         success: true,
@@ -754,12 +870,12 @@ export const acceptBooking = async (req: Request, res: Response) => {
       const userObj: any = await User.findOne({
         _id: ObjectId(booking.user.toString()),
       });
-      const expertObj:any = await User.findOne({
+      const expertObj: any = await User.findOne({
         _id: ObjectId(booking.expert.toString()),
       });
       const sendEmail = await sendMailForMeetingUpdate(
         userObj?.email,
-        "Booking Cancelled",
+        "Booking Accepted",
         `Dear ${userObj.firstName} ${userObj.lastName}
         <br/>
         <br/>
@@ -774,12 +890,12 @@ export const acceptBooking = async (req: Request, res: Response) => {
         <br/> <br/>
         Thank you
         Crack-it
-        `, 
+        `,
         {}
       );
       const sendEmailExp = await sendMailForMeetingUpdate(
         expertObj?.email,
-        "Booking Cancelled",
+        "Booking Accepted",
         `Dear ${expertObj.firstName} ${expertObj.lastName}
         <br/>
         Your have accepted booking request which is at ${getTimeInDateStamp(
@@ -795,7 +911,7 @@ export const acceptBooking = async (req: Request, res: Response) => {
         <br/>
         Crack-it
         <br/>
-        `, 
+        `,
         {}
       );
       return res.status(200).json({
@@ -841,7 +957,7 @@ export const declinedBooking = async (req: Request, res: Response) => {
       const userObj: any = await User.findOne({
         _id: ObjectId(booking.user.toString()),
       });
-      const expertObj:any = await User.findOne({
+      const expertObj: any = await User.findOne({
         _id: ObjectId(booking.expert.toString()),
       });
       const sendEmail = await sendMailForMeetingUpdate(
@@ -861,7 +977,7 @@ export const declinedBooking = async (req: Request, res: Response) => {
         <br/> <br/>
         Thank you
         Crack-it
-        `, 
+        `,
         {}
       );
       const sendEmailExp = await sendMailForMeetingUpdate(
@@ -882,7 +998,7 @@ export const declinedBooking = async (req: Request, res: Response) => {
         <br/>
         Crack-it
         <br/>
-        `, 
+        `,
         {}
       );
       return res.status(200).json({
@@ -954,6 +1070,7 @@ export const getSingleBookingDetail = async (req: Request, res: Response) => {
       .populate("promoCode")
       .populate({
         path: "booking",
+        
         populate: {
           path: "cancelReason expert user jobCategory skills",
         },
@@ -1051,6 +1168,133 @@ export const bookingPageDashboard = async (req: Request, res: Response) => {
         totalExperts,
       },
       message: "Dashboard data fetched successfully",
+    });
+  } catch (error: any) {
+    // Return error if anything goes wrong
+    return res.status(403).json({
+      success: false,
+      status: 403,
+      message: error.message,
+    });
+  }
+};
+
+export const ReBookingWithCancelledBoooking = async (
+  req: Request,
+  res: Response
+) => {
+  const { bookingId } = req.params;
+  const { expertId } = req.body;
+
+  try {
+    let totalCommission = 0;
+    const getPriceOfExpertPerHour: ExpertsDocument = await Expert.findOne({
+      user: ObjectId(expertId),
+    }).select("price");
+
+    const getBookingDetail = await Booking.findById(ObjectId(bookingId));
+    if (getBookingDetail?.expert.toString() === expertId.toString()) {
+      return res.status(200).json({
+        success: false,
+        status: 200,
+        message: "you can't send booking request to the same expert",
+      });
+    }
+    const bookingObj = new Booking({
+      user: getBookingDetail?.user,
+      expert: ObjectId(expertId),
+      bookingId: generateRandomNumber(),
+      jobCategory: getBookingDetail?.jobCategory,
+      jobDescription: expertId?.jobDescription,
+      startTime: getBookingDetail?.startTime,
+      date: getBookingDetail?.date,
+      skills: getBookingDetail?.skills,
+      duration: getBookingDetail?.duration,
+      timeZone: getBookingDetail?.timeZone,
+      endTime: getBookingDetail?.endTime,
+    });
+    // console.log(value.startTime);
+    const getCommission: any = await Commission.findOne({
+      type: "FIXED",
+      isDeleted: false,
+    });
+
+    totalCommission = getCommission?.amount;
+
+    const savedBooking = await bookingObj.save();
+    await createNotification(
+      bookingObj.user,
+      ObjectId(expertId),
+      NoticationMessage.BookingRequest.title,
+      NotificationType.Booking,
+      "web",
+      NoticationMessage.BookingRequest.message,
+      { targetId: savedBooking._id }
+    );
+
+    let totalAmount =
+      (parseInt(bookingObj?.duration.toString()) / 60) *
+      getPriceOfExpertPerHour?.price;
+    const bookPaymentObj = new BookingPayment({
+      booking: savedBooking._id,
+      totalAmount,
+      CommissionAmount: totalCommission,
+      grandTotal: totalAmount + totalCommission,
+    });
+
+    const savedPayment = await bookPaymentObj.save();
+    const userObj: any = await User.findOne({
+      _id: ObjectId(bookingObj?.user.toString()),
+    });
+    const expertObj: any = await User.findOne({
+      _id: ObjectId(expertId),
+    });
+    const sendEmail = await sendMailForMeetingUpdate(
+      userObj?.email,
+      "New Booking",
+      `Dear ${userObj.firstName} ${userObj.lastName}
+      <br/>
+      <br/>
+      You have requested a new booking at ${getTimeInDateStamp(
+        savedBooking.startTime.toString()
+      )}
+      <br/>
+
+      Expert Name -  ${expertObj.firstName} ${expertObj.lastName}
+      <br/>
+      Date - ${getDateInDateStamp(savedBooking.date.toString())}
+      <br/> <br/>
+      Thank you
+      Crack-it
+      `,
+      {}
+    );
+    const sendEmailExp = await sendMailForMeetingUpdate(
+      expertObj?.email,
+      "New Booking",
+      `Dear ${expertObj.firstName} ${expertObj.lastName}
+      <br/>
+      You have recieved a new booking at ${getTimeInDateStamp(
+        savedBooking.startTime.toString()
+      )}
+      <br/>
+      Service Requester - ${userObj.firstName} ${userObj.lastName}
+      <br/>
+      Date - ${getDateInDateStamp(savedBooking.date.toString())}
+      <br/>
+      <br/>
+      Thank you
+      <br/>
+      Crack-it
+      <br/>
+      `,
+      {}
+    );
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: savedBooking,
+      message: "Re-Booking done successfully",
     });
   } catch (error: any) {
     // Return error if anything goes wrong
